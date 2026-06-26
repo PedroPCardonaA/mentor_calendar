@@ -172,7 +172,7 @@ export function CategoryManager({ initial, userId }: Props) {
               <Label>Kind</Label>
               <Select
                 value={form.kind}
-                onValueChange={(v) => setForm((f) => ({ ...f, kind: v as CategoryKind }))}
+                onValueChange={(v) => v && setForm((f) => ({ ...f, kind: v as CategoryKind }))}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue />
