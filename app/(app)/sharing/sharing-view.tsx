@@ -75,8 +75,11 @@ export function SharingView({ me, initialShares }: Props) {
       .select()
       .single()
 
-    if (error) { toast.error(error.message); return }
-    setShares((prev) => prev.map((s) => s.id === shareId ? data : s))
+    if (error) {
+      toast.error(error.message)
+      return
+    }
+    setShares((prev) => prev.map((s) => (s.id === shareId ? data : s)))
     toast.success('Permission updated')
   }
 
@@ -87,7 +90,10 @@ export function SharingView({ me, initialShares }: Props) {
       .eq('id', shareId)
       .eq('owner_id', me)
 
-    if (error) { toast.error(error.message); return }
+    if (error) {
+      toast.error(error.message)
+      return
+    }
     setShares((prev) => prev.filter((s) => s.id !== shareId))
     toast.success('Share revoked')
   }
@@ -96,7 +102,9 @@ export function SharingView({ me, initialShares }: Props) {
     <div className="flex flex-col gap-6 max-w-xl">
       {/* Invite form */}
       <Card>
-        <CardHeader><CardTitle className="text-base">Invite someone</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base">Invite someone</CardTitle>
+        </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="invite-email">Email address</Label>
@@ -112,8 +120,13 @@ export function SharingView({ me, initialShares }: Props) {
           <div className="flex items-end gap-3">
             <div className="flex flex-col gap-1.5 flex-1">
               <Label>Permission</Label>
-              <Select value={permission} onValueChange={(v) => v && setPermission(v as SharePermission)}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <Select
+                value={permission}
+                onValueChange={(v) => v && setPermission(v as SharePermission)}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="editor">Editor — can create, edit, log</SelectItem>
                   <SelectItem value="viewer">Viewer — read only</SelectItem>

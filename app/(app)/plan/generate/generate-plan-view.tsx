@@ -86,12 +86,17 @@ export function GeneratePlanView({ ownerId, me, categories, canEdit }: Props) {
   }
 
   function toggleAccept(id: string) {
-    setDraft((prev) => prev?.map((item) => item.id === id ? { ...item, accepted: !item.accepted } : item) ?? null)
+    setDraft(
+      (prev) =>
+        prev?.map((item) => (item.id === id ? { ...item, accepted: !item.accepted } : item)) ??
+        null,
+    )
   }
 
   function saveEdit(id: string, fields: { title: string; start_at: string; end_at: string }) {
-    setDraft((prev) =>
-      prev?.map((item) => item.id === id ? { ...item, ...fields, edited: true } : item) ?? null
+    setDraft(
+      (prev) =>
+        prev?.map((item) => (item.id === id ? { ...item, ...fields, edited: true } : item)) ?? null,
     )
     setEditingId(null)
   }
@@ -108,7 +113,10 @@ export function GeneratePlanView({ ownerId, me, categories, canEdit }: Props) {
     if (!draft || !canEdit) return
     startSave(async () => {
       const toInsert = draft.filter((item) => item.accepted)
-      if (toInsert.length === 0) { toast.error('No events accepted.'); return }
+      if (toInsert.length === 0) {
+        toast.error('No events accepted.')
+        return
+      }
 
       let inserted = 0
       let skipped = 0
@@ -130,12 +138,15 @@ export function GeneratePlanView({ ownerId, me, categories, canEdit }: Props) {
           end_at: item.end_at,
           is_recurring: false,
         })
-        if (error) { toast.error(`Failed to insert "${item.title}": ${error.message}`); return }
+        if (error) {
+          toast.error(`Failed to insert "${item.title}": ${error.message}`)
+          return
+        }
         inserted++
       }
 
       toast.success(
-        `Inserted ${inserted} event${inserted !== 1 ? 's' : ''}${skipped > 0 ? `, skipped ${skipped} existing` : ''}.`
+        `Inserted ${inserted} event${inserted !== 1 ? 's' : ''}${skipped > 0 ? `, skipped ${skipped} existing` : ''}.`,
       )
       setDraft(null)
       router.push('/calendar')
@@ -147,7 +158,9 @@ export function GeneratePlanView({ ownerId, me, categories, canEdit }: Props) {
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
       <Card>
-        <CardHeader><CardTitle className="text-base">Select week</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base">Select week</CardTitle>
+        </CardHeader>
         <CardContent className="flex items-end gap-3">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="week-start">Week starts (Monday 00:00 UTC)</Label>
@@ -170,10 +183,16 @@ export function GeneratePlanView({ ownerId, me, categories, canEdit }: Props) {
       {draft && (
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">{acceptedCount} of {draft.length} accepted</p>
+            <p className="text-sm text-muted-foreground">
+              {acceptedCount} of {draft.length} accepted
+            </p>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={acceptAll}>Accept all</Button>
-              <Button variant="outline" size="sm" onClick={rejectAll}>Reject all</Button>
+              <Button variant="outline" size="sm" onClick={acceptAll}>
+                Accept all
+              </Button>
+              <Button variant="outline" size="sm" onClick={rejectAll}>
+                Reject all
+              </Button>
             </div>
           </div>
 
@@ -196,9 +215,13 @@ export function GeneratePlanView({ ownerId, me, categories, canEdit }: Props) {
           <Separator />
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setDraft(null)}>Discard all</Button>
+            <Button variant="outline" onClick={() => setDraft(null)}>
+              Discard all
+            </Button>
             <Button onClick={handleSave} disabled={savePending || acceptedCount === 0 || !canEdit}>
-              {savePending ? 'Saving…' : `Accept ${acceptedCount} event${acceptedCount !== 1 ? 's' : ''}`}
+              {savePending
+                ? 'Saving…'
+                : `Accept ${acceptedCount} event${acceptedCount !== 1 ? 's' : ''}`}
             </Button>
           </div>
         </div>
@@ -218,7 +241,16 @@ interface DraftCardProps {
   onEditCancel: () => void
 }
 
-function DraftCard({ item, catMap, isEditing, canEdit, onToggleAccept, onEditStart, onEditSave, onEditCancel }: DraftCardProps) {
+function DraftCard({
+  item,
+  catMap,
+  isEditing,
+  canEdit,
+  onToggleAccept,
+  onEditStart,
+  onEditSave,
+  onEditCancel,
+}: DraftCardProps) {
   const cat = item.proposed.category_id ? catMap.get(item.proposed.category_id) : null
   const color = cat?.color ?? EVENT_TYPE_COLORS[item.proposed.event_type as EventType] ?? '#6b7280'
   const isFixtureExisting = item.proposed.source === 'fixture' && !!item.proposed.event_id
@@ -230,24 +262,45 @@ function DraftCard({ item, catMap, isEditing, canEdit, onToggleAccept, onEditSta
   if (isEditing) {
     return (
       <li className="rounded-xl border bg-card p-3 flex flex-col gap-3">
-        <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Title" />
+        <Input
+          value={editTitle}
+          onChange={(e) => setEditTitle(e.target.value)}
+          placeholder="Title"
+        />
         <div className="grid grid-cols-2 gap-2">
           <div>
             <Label className="text-xs">Start</Label>
-            <Input type="datetime-local" value={editStart} onChange={(e) => setEditStart(e.target.value)} />
+            <Input
+              type="datetime-local"
+              value={editStart}
+              onChange={(e) => setEditStart(e.target.value)}
+            />
           </div>
           <div>
             <Label className="text-xs">End</Label>
-            <Input type="datetime-local" value={editEnd} onChange={(e) => setEditEnd(e.target.value)} />
+            <Input
+              type="datetime-local"
+              value={editEnd}
+              onChange={(e) => setEditEnd(e.target.value)}
+            />
           </div>
         </div>
         <div className="flex gap-2 justify-end">
-          <Button variant="outline" size="sm" onClick={onEditCancel}>Cancel</Button>
-          <Button size="sm" onClick={() => onEditSave({
-            title: editTitle,
-            start_at: editStart + ':00Z',
-            end_at: editEnd + ':00Z',
-          })}>Save</Button>
+          <Button variant="outline" size="sm" onClick={onEditCancel}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            onClick={() =>
+              onEditSave({
+                title: editTitle,
+                start_at: editStart + ':00Z',
+                end_at: editEnd + ':00Z',
+              })
+            }
+          >
+            Save
+          </Button>
         </div>
       </li>
     )
@@ -274,15 +327,21 @@ function DraftCard({ item, catMap, isEditing, canEdit, onToggleAccept, onEditSta
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm flex items-center gap-2">
             {item.title}
-            {item.edited && <Badge variant="secondary" className="text-[10px]">Edited</Badge>}
+            {item.edited && (
+              <Badge variant="secondary" className="text-[10px]">
+                Edited
+              </Badge>
+            )}
             {isFixtureExisting && (
               <Badge variant="outline" className="text-[10px] flex items-center gap-0.5">
-                <AlertCircle className="h-3 w-3" />Already exists
+                <AlertCircle className="h-3 w-3" />
+                Already exists
               </Badge>
             )}
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {new Date(item.start_at).toLocaleString()} → {new Date(item.end_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {new Date(item.start_at).toLocaleString()} →{' '}
+            {new Date(item.end_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             {cat && <span> · {cat.name}</span>}
           </p>
           <div className="flex items-center gap-1.5 mt-1">

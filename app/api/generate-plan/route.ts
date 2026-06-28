@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
-const EDGE_FUNCTION_URL =
-  'https://etsaihssgoyexbzprrdo.supabase.co/functions/v1/generate-plan'
+const EDGE_FUNCTION_URL = 'https://etsaihssgoyexbzprrdo.supabase.co/functions/v1/generate-plan'
 
 export interface ProposedEvent {
   source: 'fixture' | 'generated'

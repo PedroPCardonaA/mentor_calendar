@@ -21,7 +21,9 @@ export async function logoutAction() {
  */
 export async function setActiveCalendarAction(ownerId: string): Promise<void> {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   // Allow self

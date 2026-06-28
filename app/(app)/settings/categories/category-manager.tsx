@@ -71,11 +71,19 @@ export function CategoryManager({ initial, userId }: Props) {
       if (editTarget) {
         const { data, error } = await supabase
           .from('categories')
-          .update({ name: form.name.trim(), kind: form.kind, color: form.color, updated_at: new Date().toISOString() })
+          .update({
+            name: form.name.trim(),
+            kind: form.kind,
+            color: form.color,
+            updated_at: new Date().toISOString(),
+          })
           .eq('id', editTarget.id)
           .select()
           .single()
-        if (error) { toast.error(error.message); return }
+        if (error) {
+          toast.error(error.message)
+          return
+        }
         setCategories((prev) => prev.map((c) => (c.id === editTarget.id ? data : c)))
         toast.success('Category updated')
       } else {
@@ -84,7 +92,10 @@ export function CategoryManager({ initial, userId }: Props) {
           .insert({ name: form.name.trim(), kind: form.kind, color: form.color, owner_id: userId })
           .select()
           .single()
-        if (error) { toast.error(error.message); return }
+        if (error) {
+          toast.error(error.message)
+          return
+        }
         setCategories((prev) => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)))
         toast.success('Category created')
       }
@@ -96,7 +107,10 @@ export function CategoryManager({ initial, userId }: Props) {
   function handleDelete(id: string) {
     startTransition(async () => {
       const { error } = await supabase.from('categories').delete().eq('id', id)
-      if (error) { toast.error(error.message); return }
+      if (error) {
+        toast.error(error.message)
+        return
+      }
       setCategories((prev) => prev.filter((c) => c.id !== id))
       setDeleteConfirm(null)
       toast.success('Category deleted')
@@ -133,7 +147,12 @@ export function CategoryManager({ initial, userId }: Props) {
                 <Badge variant="secondary" className="text-xs capitalize">
                   {CATEGORY_KIND_LABELS[cat.kind as CategoryKind]}
                 </Badge>
-                <Button variant="ghost" size="icon-sm" onClick={() => openEdit(cat)} aria-label="Edit">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => openEdit(cat)}
+                  aria-label="Edit"
+                >
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
                 <Button
@@ -178,11 +197,13 @@ export function CategoryManager({ initial, userId }: Props) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(Object.entries(CATEGORY_KIND_LABELS) as [CategoryKind, string][]).map(([val, label]) => (
-                    <SelectItem key={val} value={val}>
-                      {label}
-                    </SelectItem>
-                  ))}
+                  {(Object.entries(CATEGORY_KIND_LABELS) as [CategoryKind, string][]).map(
+                    ([val, label]) => (
+                      <SelectItem key={val} value={val}>
+                        {label}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
             </div>

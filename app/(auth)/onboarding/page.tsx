@@ -5,7 +5,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 export default async function OnboardingPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
 
@@ -22,9 +24,7 @@ export default async function OnboardingPage() {
         <CardDescription>Confirm your display name to finish setting up.</CardDescription>
       </CardHeader>
       <CardContent>
-        <OnboardingForm
-          defaultName={profile?.full_name ?? user.user_metadata?.full_name ?? ''}
-        />
+        <OnboardingForm defaultName={profile?.full_name ?? user.user_metadata?.full_name ?? ''} />
       </CardContent>
     </Card>
   )

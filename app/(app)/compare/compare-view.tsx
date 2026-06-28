@@ -47,10 +47,23 @@ function buildRows(occs: Occurrence[], logs: TimeLog[]): CompareRow[] {
     const key = `${occ.event.id}::${occ.occurrenceStart.toISOString()}`
     const log = logByKey.get(key)
     if (log) {
-      rows.push({ type: 'matched', occurrence: occ, log, matched: true, missed: false, unplanned: false })
+      rows.push({
+        type: 'matched',
+        occurrence: occ,
+        log,
+        matched: true,
+        missed: false,
+        unplanned: false,
+      })
       logByKey.delete(key)
     } else {
-      rows.push({ type: 'planned', occurrence: occ, matched: false, missed: true, unplanned: false })
+      rows.push({
+        type: 'planned',
+        occurrence: occ,
+        matched: false,
+        missed: true,
+        unplanned: false,
+      })
     }
   }
 
@@ -67,8 +80,12 @@ function buildRows(occs: Occurrence[], logs: TimeLog[]): CompareRow[] {
   }
 
   return rows.sort((a, b) => {
-    const aTime = a.occurrence?.start ?? (a.log?.actual_start ? new Date(a.log.actual_start) : new Date(a.log?.logged_at ?? 0))
-    const bTime = b.occurrence?.start ?? (b.log?.actual_start ? new Date(b.log.actual_start) : new Date(b.log?.logged_at ?? 0))
+    const aTime =
+      a.occurrence?.start ??
+      (a.log?.actual_start ? new Date(a.log.actual_start) : new Date(a.log?.logged_at ?? 0))
+    const bTime =
+      b.occurrence?.start ??
+      (b.log?.actual_start ? new Date(b.log.actual_start) : new Date(b.log?.logged_at ?? 0))
     return aTime.getTime() - bTime.getTime()
   })
 }
@@ -78,7 +95,9 @@ export function CompareView({ categories, ownerId }: Props) {
   const catMap = new Map(categories.map((c) => [c.id, c]))
 
   const now = new Date()
-  const [startDate, setStartDate] = useState(format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'))
+  const [startDate, setStartDate] = useState(
+    format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'),
+  )
   const [endDate, setEndDate] = useState(format(endOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd'))
   const [rows, setRows] = useState<CompareRow[]>([])
   const [loaded, setLoaded] = useState(false)
@@ -95,7 +114,7 @@ export function CompareView({ categories, ownerId }: Props) {
         .eq('owner_id', ownerId)
         .or(
           `and(is_recurring.eq.false,start_at.gte.${rangeStart.toISOString()},start_at.lte.${rangeEnd.toISOString()}),` +
-            `and(is_recurring.eq.true,start_at.lte.${rangeEnd.toISOString()},or(recurrence_until.is.null,recurrence_until.gte.${rangeStart.toISOString()}))`
+            `and(is_recurring.eq.true,start_at.lte.${rangeEnd.toISOString()},or(recurrence_until.is.null,recurrence_until.gte.${rangeStart.toISOString()}))`,
         )
 
       const events: Event[] = eventsData ?? []
@@ -143,11 +162,23 @@ export function CompareView({ categories, ownerId }: Props) {
       <div className="flex items-end gap-3 flex-wrap">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="cmp-start">From</Label>
-          <Input id="cmp-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" />
+          <Input
+            id="cmp-start"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="w-40"
+          />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="cmp-end">To</Label>
-          <Input id="cmp-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-40" />
+          <Input
+            id="cmp-end"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="w-40"
+          />
         </div>
         <Button onClick={load} disabled={pending}>
           {pending ? 'Loading…' : 'Compare'}
@@ -158,13 +189,29 @@ export function CompareView({ categories, ownerId }: Props) {
         <>
           {/* Summary stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard icon={<CheckCircle2 className="h-4 w-4 text-green-500" />} label="Matched" value={matched.length} />
-            <StatCard icon={<XCircle className="h-4 w-4 text-destructive" />} label="Missed" value={missed.length} />
-            <StatCard icon={<AlertCircle className="h-4 w-4 text-amber-500" />} label="Unplanned" value={unplanned.length} />
+            <StatCard
+              icon={<CheckCircle2 className="h-4 w-4 text-green-500" />}
+              label="Matched"
+              value={matched.length}
+            />
+            <StatCard
+              icon={<XCircle className="h-4 w-4 text-destructive" />}
+              label="Missed"
+              value={missed.length}
+            />
+            <StatCard
+              icon={<AlertCircle className="h-4 w-4 text-amber-500" />}
+              label="Unplanned"
+              value={unplanned.length}
+            />
             <StatCard
               icon={<Clock className="h-4 w-4 text-primary" />}
               label="Adherence"
-              value={totalPlannedMin > 0 ? `${Math.round((totalActualMin / totalPlannedMin) * 100)}%` : '—'}
+              value={
+                totalPlannedMin > 0
+                  ? `${Math.round((totalActualMin / totalPlannedMin) * 100)}%`
+                  : '—'
+              }
             />
           </div>
           <p className="text-xs text-muted-foreground">
@@ -175,7 +222,9 @@ export function CompareView({ categories, ownerId }: Props) {
 
           {/* Row-by-row list */}
           {rows.length === 0 ? (
-            <p className="text-muted-foreground text-sm py-8 text-center">No events or logs in this range.</p>
+            <p className="text-muted-foreground text-sm py-8 text-center">
+              No events or logs in this range.
+            </p>
           ) : (
             <ul className="flex flex-col gap-2">
               {rows.map((row, i) => (
@@ -195,7 +244,15 @@ export function CompareView({ categories, ownerId }: Props) {
   )
 }
 
-function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string | number }) {
+function StatCard({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string | number
+}) {
   return (
     <div className="rounded-xl border bg-card p-3 flex items-center gap-2">
       {icon}
@@ -214,21 +271,30 @@ function CompareRowItem({ row, catMap }: { row: CompareRow; catMap: Map<string, 
   const bgClass = row.missed
     ? 'bg-destructive/5 border-destructive/20'
     : row.unplanned
-    ? 'bg-amber-50 border-amber-200'
-    : 'bg-card border-border'
+      ? 'bg-amber-50 border-amber-200'
+      : 'bg-card border-border'
 
   const badgeEl = row.matched ? (
-    <Badge variant="secondary" className="bg-green-100 text-green-700 text-[10px]">Matched</Badge>
+    <Badge variant="secondary" className="bg-green-100 text-green-700 text-[10px]">
+      Matched
+    </Badge>
   ) : row.missed ? (
-    <Badge variant="secondary" className="bg-red-100 text-red-700 text-[10px]">Missed</Badge>
+    <Badge variant="secondary" className="bg-red-100 text-red-700 text-[10px]">
+      Missed
+    </Badge>
   ) : row.unplanned ? (
-    <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-[10px]">Unplanned</Badge>
+    <Badge variant="secondary" className="bg-amber-100 text-amber-700 text-[10px]">
+      Unplanned
+    </Badge>
   ) : (
-    <Badge variant="secondary" className="text-[10px]">Actual</Badge>
+    <Badge variant="secondary" className="text-[10px]">
+      Actual
+    </Badge>
   )
 
   const color = occ
-    ? (catMap.get(occ.event.category_id ?? '')?.color ?? EVENT_TYPE_COLORS[occ.event.event_type as EventType])
+    ? (catMap.get(occ.event.category_id ?? '')?.color ??
+      EVENT_TYPE_COLORS[occ.event.event_type as EventType])
     : '#6b7280'
 
   return (
@@ -237,20 +303,28 @@ function CompareRowItem({ row, catMap }: { row: CompareRow; catMap: Map<string, 
         <span className="h-3 w-3 rounded-full flex-shrink-0 mt-0.5" style={{ background: color }} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-sm truncate">{occ?.title ?? log?.title ?? '(untitled)'}</span>
+            <span className="font-medium text-sm truncate">
+              {occ?.title ?? log?.title ?? '(untitled)'}
+            </span>
             {badgeEl}
             <Badge variant="outline" className="text-[10px] capitalize">
-              {EVENT_TYPE_LABELS[(occ?.event.event_type ?? log?.event_type ?? 'other') as EventType]}
+              {
+                EVENT_TYPE_LABELS[
+                  (occ?.event.event_type ?? log?.event_type ?? 'other') as EventType
+                ]
+              }
             </Badge>
           </div>
           <div className="mt-1 text-xs text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
-            {occ && (
-              <span>Planned: {formatDateRange(occ.start, occ.end)}</span>
-            )}
+            {occ && <span>Planned: {formatDateRange(occ.start, occ.end)}</span>}
             {log && log.actual_start && (
               <span>
-                Actual: {formatDateRange(new Date(log.actual_start), log.actual_end ? new Date(log.actual_end) : null)}
-                {' '}· {formatMinutes(log.actual_minutes)}
+                Actual:{' '}
+                {formatDateRange(
+                  new Date(log.actual_start),
+                  log.actual_end ? new Date(log.actual_end) : null,
+                )}{' '}
+                · {formatMinutes(log.actual_minutes)}
               </span>
             )}
           </div>

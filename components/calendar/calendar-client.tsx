@@ -55,7 +55,7 @@ export function CalendarClient({ categories, ownerId, canEdit }: Props) {
         .eq('owner_id', ownerId)
         .or(
           `and(is_recurring.eq.false,start_at.gte.${start},start_at.lte.${end}),` +
-            `and(is_recurring.eq.true,start_at.lte.${end},or(recurrence_until.is.null,recurrence_until.gte.${start}))`
+            `and(is_recurring.eq.true,start_at.lte.${end},or(recurrence_until.is.null,recurrence_until.gte.${start}))`,
         )
 
       const events: Event[] = eventsData ?? []
@@ -68,14 +68,18 @@ export function CalendarClient({ categories, ownerId, canEdit }: Props) {
       const { data: excData } = await supabase
         .from('event_exceptions')
         .select('*')
-        .in('event_id', events.map((e) => e.id))
+        .in(
+          'event_id',
+          events.map((e) => e.id),
+        )
 
       const exceptions: EventException[] = excData ?? []
       const occurrences = expandOccurrences(events, exceptions, rangeStart, rangeEnd)
 
       const mapped: CalEvent[] = occurrences.map((occ) => {
         const cat = occ.event.category_id ? catMap.get(occ.event.category_id) : null
-        const color = cat?.color ?? EVENT_TYPE_COLORS[occ.event.event_type as EventType] ?? '#6b7280'
+        const color =
+          cat?.color ?? EVENT_TYPE_COLORS[occ.event.event_type as EventType] ?? '#6b7280'
         return {
           id: `${occ.event.id}::${occ.occurrenceStart.toISOString()}`,
           title: occ.title,
@@ -90,7 +94,7 @@ export function CalendarClient({ categories, ownerId, canEdit }: Props) {
       setCalEvents(mapped)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ownerId, categories]
+    [ownerId, categories],
   )
 
   function handleDatesSet({ start, end }: DatesSetArg) {

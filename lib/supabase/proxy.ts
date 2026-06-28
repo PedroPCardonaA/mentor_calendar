@@ -25,11 +25,11 @@ export async function updateSession(request: NextRequest) {
           // Re-create the response so it carries the updated cookies downstream
           supabaseResponse = NextResponse.next({ request })
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options),
           )
         },
       },
-    }
+    },
   )
 
   // getUser() validates the JWT server-side — do NOT replace with getSession()

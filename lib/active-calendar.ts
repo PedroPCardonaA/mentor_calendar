@@ -64,14 +64,14 @@ export async function getActiveCalendar(supabase: Client): Promise<ActiveCalenda
 
   const calendars: CalendarOption[] = [
     { ownerId: me, label: myLabel, permission: 'owner' },
-    ...((acceptedShares ?? []).map((row) => {
+    ...(acceptedShares ?? []).map((row) => {
       const profile = row.profiles as { full_name: string | null; email: string | null } | null
       return {
         ownerId: row.owner_id,
         label: profile?.full_name ?? profile?.email ?? row.owner_id.slice(0, 8),
         permission: (row.permission ?? 'viewer') as SharePermission,
       }
-    })),
+    }),
   ]
 
   // Resolve active calendar from cookie

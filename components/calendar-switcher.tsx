@@ -45,7 +45,7 @@ export function CalendarSwitcher({ calendars, activeOwnerId }: Props) {
         className={cn(
           'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors outline-none',
           'text-muted-foreground hover:text-foreground hover:bg-muted',
-          pending && 'opacity-60 pointer-events-none'
+          pending && 'opacity-60 pointer-events-none',
         )}
       >
         <Calendar className="h-4 w-4" />

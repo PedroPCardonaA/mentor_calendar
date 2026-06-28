@@ -3,15 +3,8 @@ import type { Database, Profile } from '../database.types'
 
 type Client = SupabaseClient<Database>
 
-export async function getProfile(
-  supabase: Client,
-  userId: string
-): Promise<Profile | null> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single()
+export async function getProfile(supabase: Client, userId: string): Promise<Profile | null> {
+  const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
 
   if (error) {
     if (error.code === 'PGRST116') return null // not found
@@ -23,7 +16,7 @@ export async function getProfile(
 export async function updateProfile(
   supabase: Client,
   userId: string,
-  update: { full_name?: string; email?: string }
+  update: { full_name?: string; email?: string },
 ): Promise<Profile> {
   const { data, error } = await supabase
     .from('profiles')

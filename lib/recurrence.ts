@@ -16,9 +16,7 @@ export interface Occurrence {
 
 /** Convert an ISO 8601 string to an iCalendar DTSTART value (YYYYMMDDTHHMMSSZ). */
 function toICAL(isoString: string): string {
-  return isoString
-    .replace(/[-:]/g, '')
-    .replace(/\.\d{3}/, '')
+  return isoString.replace(/[-:]/g, '').replace(/\.\d{3}/, '')
 }
 
 /**
@@ -33,7 +31,7 @@ export function expandOccurrences(
   events: Event[],
   exceptions: EventException[],
   rangeStart: Date,
-  rangeEnd: Date
+  rangeEnd: Date,
 ): Occurrence[] {
   // Build lookup by (event_id, occurrence_start ISO string)
   const exceptionMap = new Map<string, EventException>()
@@ -76,8 +74,8 @@ export function expandOccurrences(
           exc?.end_at != null
             ? new Date(exc.end_at)
             : originalDuration !== null
-            ? new Date(effectiveStart.getTime() + originalDuration)
-            : null
+              ? new Date(effectiveStart.getTime() + originalDuration)
+              : null
 
         result.push({
           event,

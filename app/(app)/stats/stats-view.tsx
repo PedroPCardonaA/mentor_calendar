@@ -61,7 +61,7 @@ export function StatsView({ ownerId, initialCategories }: Props) {
         .eq('owner_id', ownerId)
         .or(
           `and(is_recurring.eq.false,start_at.gte.${rangeStart.toISOString()},start_at.lte.${rangeEnd.toISOString()}),` +
-            `and(is_recurring.eq.true,start_at.lte.${rangeEnd.toISOString()},or(recurrence_until.is.null,recurrence_until.gte.${rangeStart.toISOString()}))`
+            `and(is_recurring.eq.true,start_at.lte.${rangeEnd.toISOString()},or(recurrence_until.is.null,recurrence_until.gte.${rangeStart.toISOString()}))`,
         )
 
       const events: Event[] = eventsData ?? []
@@ -91,16 +91,30 @@ export function StatsView({ ownerId, initialCategories }: Props) {
       <div className="flex items-end gap-3 flex-wrap">
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="stats-start">From</Label>
-          <Input id="stats-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" />
+          <Input
+            id="stats-start"
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="w-40"
+          />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="stats-end">To</Label>
-          <Input id="stats-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-40" />
+          <Input
+            id="stats-end"
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="w-40"
+          />
         </div>
         <div className="flex flex-col gap-1.5">
           <Label>Bucket</Label>
           <Select value={bucket} onValueChange={(v) => v && setBucket(v as 'week' | 'month')}>
-            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-28">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="week">Weekly</SelectItem>
               <SelectItem value="month">Monthly</SelectItem>
@@ -122,8 +136,14 @@ export function StatsView({ ownerId, initialCategories }: Props) {
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <KpiCard label="Total adherence" value={`${stats.totalAdherence}%`} />
-            <KpiCard label="Planned hours" value={stats.byCategory.reduce((s, r) => s + r.plannedHours, 0).toFixed(1) + 'h'} />
-            <KpiCard label="Actual hours" value={stats.byCategory.reduce((s, r) => s + r.actualHours, 0).toFixed(1) + 'h'} />
+            <KpiCard
+              label="Planned hours"
+              value={stats.byCategory.reduce((s, r) => s + r.plannedHours, 0).toFixed(1) + 'h'}
+            />
+            <KpiCard
+              label="Actual hours"
+              value={stats.byCategory.reduce((s, r) => s + r.actualHours, 0).toFixed(1) + 'h'}
+            />
           </div>
 
           <Tabs defaultValue="time">
@@ -136,7 +156,9 @@ export function StatsView({ ownerId, initialCategories }: Props) {
 
             <TabsContent value="time" className="mt-4">
               <Card>
-                <CardHeader><CardTitle className="text-base">Planned vs. actual hours</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle className="text-base">Planned vs. actual hours</CardTitle>
+                </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={260}>
                     <BarChart data={stats.overTime}>
@@ -145,8 +167,18 @@ export function StatsView({ ownerId, initialCategories }: Props) {
                       <YAxis tick={{ fontSize: 11 }} unit="h" />
                       <Tooltip formatter={(v) => [`${v}h`]} />
                       <Legend />
-                      <Bar dataKey="plannedHours" name="Planned" fill="hsl(215 90% 60%)" radius={[3,3,0,0]} />
-                      <Bar dataKey="actualHours" name="Actual" fill="hsl(145 60% 45%)" radius={[3,3,0,0]} />
+                      <Bar
+                        dataKey="plannedHours"
+                        name="Planned"
+                        fill="hsl(215 90% 60%)"
+                        radius={[3, 3, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="actualHours"
+                        name="Actual"
+                        fill="hsl(145 60% 45%)"
+                        radius={[3, 3, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -155,17 +187,34 @@ export function StatsView({ ownerId, initialCategories }: Props) {
 
             <TabsContent value="category" className="mt-4">
               <Card>
-                <CardHeader><CardTitle className="text-base">Hours by category</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle className="text-base">Hours by category</CardTitle>
+                </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={260}>
                     <BarChart data={stats.byCategory} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis type="number" tick={{ fontSize: 11 }} unit="h" />
-                      <YAxis type="category" dataKey="categoryName" width={100} tick={{ fontSize: 11 }} />
+                      <YAxis
+                        type="category"
+                        dataKey="categoryName"
+                        width={100}
+                        tick={{ fontSize: 11 }}
+                      />
                       <Tooltip formatter={(v) => [`${v}h`]} />
                       <Legend />
-                      <Bar dataKey="plannedHours" name="Planned" fill="hsl(215 90% 60%)" radius={[0,3,3,0]} />
-                      <Bar dataKey="actualHours" name="Actual" fill="hsl(145 60% 45%)" radius={[0,3,3,0]} />
+                      <Bar
+                        dataKey="plannedHours"
+                        name="Planned"
+                        fill="hsl(215 90% 60%)"
+                        radius={[0, 3, 3, 0]}
+                      />
+                      <Bar
+                        dataKey="actualHours"
+                        name="Actual"
+                        fill="hsl(145 60% 45%)"
+                        radius={[0, 3, 3, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -174,17 +223,34 @@ export function StatsView({ ownerId, initialCategories }: Props) {
 
             <TabsContent value="type" className="mt-4">
               <Card>
-                <CardHeader><CardTitle className="text-base">Hours by event type</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle className="text-base">Hours by event type</CardTitle>
+                </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={stats.byType.map((r) => ({ ...r, label: EVENT_TYPE_LABELS[r.eventType as EventType] }))}>
+                    <BarChart
+                      data={stats.byType.map((r) => ({
+                        ...r,
+                        label: EVENT_TYPE_LABELS[r.eventType as EventType],
+                      }))}
+                    >
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} unit="h" />
                       <Tooltip formatter={(v) => [`${v}h`]} />
                       <Legend />
-                      <Bar dataKey="plannedHours" name="Planned" fill="hsl(215 90% 60%)" radius={[3,3,0,0]} />
-                      <Bar dataKey="actualHours" name="Actual" fill="hsl(145 60% 45%)" radius={[3,3,0,0]} />
+                      <Bar
+                        dataKey="plannedHours"
+                        name="Planned"
+                        fill="hsl(215 90% 60%)"
+                        radius={[3, 3, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="actualHours"
+                        name="Actual"
+                        fill="hsl(145 60% 45%)"
+                        radius={[3, 3, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -193,7 +259,9 @@ export function StatsView({ ownerId, initialCategories }: Props) {
 
             <TabsContent value="adherence" className="mt-4">
               <Card>
-                <CardHeader><CardTitle className="text-base">Adherence & delta by category</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle className="text-base">Adherence & delta by category</CardTitle>
+                </CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -210,13 +278,19 @@ export function StatsView({ ownerId, initialCategories }: Props) {
                         {stats.byAdherence.map((row) => (
                           <tr key={row.categoryId ?? '__none__'} className="border-b last:border-0">
                             <td className="py-1.5 flex items-center gap-1.5">
-                              <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: row.color }} />
+                              <span
+                                className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+                                style={{ background: row.color }}
+                              />
                               {row.categoryName}
                             </td>
                             <td className="py-1.5 text-right">{row.plannedHours}h</td>
                             <td className="py-1.5 text-right">{row.actualHours}h</td>
-                            <td className={`py-1.5 text-right ${row.deltaHours >= 0 ? 'text-green-600' : 'text-destructive'}`}>
-                              {row.deltaHours >= 0 ? '+' : ''}{row.deltaHours}h
+                            <td
+                              className={`py-1.5 text-right ${row.deltaHours >= 0 ? 'text-green-600' : 'text-destructive'}`}
+                            >
+                              {row.deltaHours >= 0 ? '+' : ''}
+                              {row.deltaHours}h
                             </td>
                             <td className="py-1.5 text-right">
                               <Badge

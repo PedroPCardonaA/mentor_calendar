@@ -6,7 +6,9 @@ import type { Category } from '@/lib/database.types'
 
 export default async function StatsPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   const { ownerId } = await getActiveCalendar(supabase)
@@ -21,12 +23,11 @@ export default async function StatsPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-semibold">Stats</h1>
-        <p className="text-muted-foreground mt-1">Planned vs. actual hours and adherence metrics.</p>
+        <p className="text-muted-foreground mt-1">
+          Planned vs. actual hours and adherence metrics.
+        </p>
       </div>
-      <StatsView
-        ownerId={ownerId}
-        initialCategories={(categoriesData ?? []) as Category[]}
-      />
+      <StatsView ownerId={ownerId} initialCategories={(categoriesData ?? []) as Category[]} />
     </div>
   )
 }

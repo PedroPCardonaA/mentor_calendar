@@ -45,10 +45,11 @@ export function InvitationsView({ me, initialShares }: Props) {
         .select()
         .single()
 
-      if (error) { toast.error(error.message); return }
-      setShares((prev) =>
-        prev.map((s) => s.id === shareId ? { ...s, ...data } : s)
-      )
+      if (error) {
+        toast.error(error.message)
+        return
+      }
+      setShares((prev) => prev.map((s) => (s.id === shareId ? { ...s, ...data } : s)))
       toast.success('Invitation accepted! Calendar added to your switcher.')
       // Refresh layout so CalendarSwitcher picks up the new entry
       router.refresh()
@@ -64,10 +65,11 @@ export function InvitationsView({ me, initialShares }: Props) {
         .select()
         .single()
 
-      if (error) { toast.error(error.message); return }
-      setShares((prev) =>
-        prev.map((s) => s.id === shareId ? { ...s, ...data } : s)
-      )
+      if (error) {
+        toast.error(error.message)
+        return
+      }
+      setShares((prev) => prev.map((s) => (s.id === shareId ? { ...s, ...data } : s)))
       toast.success('Invitation declined.')
       router.refresh()
     })
@@ -90,7 +92,13 @@ export function InvitationsView({ me, initialShares }: Props) {
         <div className="flex flex-col gap-2">
           <p className="text-sm font-medium text-muted-foreground">Pending</p>
           {pending_.map((share) => (
-            <InviteCard key={share.id} share={share} onAccept={accept} onDecline={decline} disabled={pending} />
+            <InviteCard
+              key={share.id}
+              share={share}
+              onAccept={accept}
+              onDecline={decline}
+              disabled={pending}
+            />
           ))}
         </div>
       )}
@@ -98,7 +106,13 @@ export function InvitationsView({ me, initialShares }: Props) {
         <div className="flex flex-col gap-2">
           <p className="text-sm font-medium text-muted-foreground">Past</p>
           {others.map((share) => (
-            <InviteCard key={share.id} share={share} onAccept={accept} onDecline={decline} disabled={pending} />
+            <InviteCard
+              key={share.id}
+              share={share}
+              onAccept={accept}
+              onDecline={decline}
+              disabled={pending}
+            />
           ))}
         </div>
       )}
@@ -117,7 +131,8 @@ function InviteCard({
   onDecline: (id: string) => void
   disabled: boolean
 }) {
-  const ownerName = share.owner_profile?.full_name ?? share.owner_profile?.email ?? share.owner_id.slice(0, 8)
+  const ownerName =
+    share.owner_profile?.full_name ?? share.owner_profile?.email ?? share.owner_id.slice(0, 8)
 
   return (
     <div className="rounded-xl border bg-card p-3 flex items-center gap-3">
@@ -125,20 +140,34 @@ function InviteCard({
       <div className="flex-1 min-w-0">
         <p className="font-medium text-sm">{ownerName}&apos;s calendar</p>
         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-          <Badge variant="outline" className="text-[10px] capitalize">{share.permission}</Badge>
+          <Badge variant="outline" className="text-[10px] capitalize">
+            {share.permission}
+          </Badge>
           {share.status === 'pending' && (
-            <Badge variant="secondary" className="text-[10px] bg-amber-100 text-amber-700 flex items-center gap-0.5">
-              <Clock className="h-3 w-3" />pending
+            <Badge
+              variant="secondary"
+              className="text-[10px] bg-amber-100 text-amber-700 flex items-center gap-0.5"
+            >
+              <Clock className="h-3 w-3" />
+              pending
             </Badge>
           )}
           {share.status === 'accepted' && (
-            <Badge variant="secondary" className="text-[10px] bg-green-100 text-green-700 flex items-center gap-0.5">
-              <CheckCircle2 className="h-3 w-3" />accepted
+            <Badge
+              variant="secondary"
+              className="text-[10px] bg-green-100 text-green-700 flex items-center gap-0.5"
+            >
+              <CheckCircle2 className="h-3 w-3" />
+              accepted
             </Badge>
           )}
           {share.status === 'declined' && (
-            <Badge variant="secondary" className="text-[10px] bg-red-100 text-red-700 flex items-center gap-0.5">
-              <XCircle className="h-3 w-3" />declined
+            <Badge
+              variant="secondary"
+              className="text-[10px] bg-red-100 text-red-700 flex items-center gap-0.5"
+            >
+              <XCircle className="h-3 w-3" />
+              declined
             </Badge>
           )}
         </div>

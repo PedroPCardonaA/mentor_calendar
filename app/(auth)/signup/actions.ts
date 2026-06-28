@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function signupAction(
   _prev: { error?: string } | null,
-  formData: FormData
+  formData: FormData,
 ): Promise<{ error: string }> {
   const full_name = (formData.get('full_name') as string).trim()
   const email = formData.get('email') as string

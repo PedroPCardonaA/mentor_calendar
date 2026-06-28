@@ -1,11 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type {
-  Database,
-  Event,
-  EventException,
-  TablesInsert,
-  TablesUpdate,
-} from '../database.types'
+import type { Database, Event, EventException, TablesInsert, TablesUpdate } from '../database.types'
 
 type Client = SupabaseClient<Database>
 
@@ -18,7 +12,7 @@ export async function getEvents(
   supabase: Client,
   ownerId: string,
   rangeStart: Date,
-  rangeEnd: Date
+  rangeEnd: Date,
 ): Promise<Event[]> {
   const start = rangeStart.toISOString()
   const end = rangeEnd.toISOString()
@@ -29,7 +23,7 @@ export async function getEvents(
     .eq('owner_id', ownerId)
     .or(
       `and(is_recurring.eq.false,start_at.gte.${start},start_at.lte.${end}),` +
-        `and(is_recurring.eq.true,start_at.lte.${end},or(recurrence_until.is.null,recurrence_until.gte.${start}))`
+        `and(is_recurring.eq.true,start_at.lte.${end},or(recurrence_until.is.null,recurrence_until.gte.${start}))`,
     )
     .order('start_at')
 
@@ -42,14 +36,11 @@ export async function getEventExceptions(
   supabase: Client,
   eventIds: string[],
   rangeStart?: Date,
-  rangeEnd?: Date
+  rangeEnd?: Date,
 ): Promise<EventException[]> {
   if (eventIds.length === 0) return []
 
-  let query = supabase
-    .from('event_exceptions')
-    .select('*')
-    .in('event_id', eventIds)
+  let query = supabase.from('event_exceptions').select('*').in('event_id', eventIds)
 
   if (rangeStart) query = query.gte('occurrence_start', rangeStart.toISOString())
   if (rangeEnd) query = query.lte('occurrence_start', rangeEnd.toISOString())
@@ -61,13 +52,9 @@ export async function getEventExceptions(
 
 export async function createEvent(
   supabase: Client,
-  input: Omit<TablesInsert<'events'>, 'id' | 'created_at' | 'updated_at'>
+  input: Omit<TablesInsert<'events'>, 'id' | 'created_at' | 'updated_at'>,
 ): Promise<Event> {
-  const { data, error } = await supabase
-    .from('events')
-    .insert(input)
-    .select()
-    .single()
+  const { data, error } = await supabase.from('events').insert(input).select().single()
 
   if (error) throw error
   return data
@@ -76,7 +63,7 @@ export async function createEvent(
 export async function updateEvent(
   supabase: Client,
   id: string,
-  update: TablesUpdate<'events'>
+  update: TablesUpdate<'events'>,
 ): Promise<Event> {
   const { data, error } = await supabase
     .from('events')
@@ -97,7 +84,7 @@ export async function deleteEvent(supabase: Client, id: string): Promise<void> {
 /** Upsert an exception for a single occurrence (cancel or override fields). */
 export async function upsertEventException(
   supabase: Client,
-  input: Omit<TablesInsert<'event_exceptions'>, 'id' | 'created_at'>
+  input: Omit<TablesInsert<'event_exceptions'>, 'id' | 'created_at'>,
 ): Promise<EventException> {
   const { data, error } = await supabase
     .from('event_exceptions')

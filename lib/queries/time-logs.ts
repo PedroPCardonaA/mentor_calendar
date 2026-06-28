@@ -7,7 +7,7 @@ export async function getTimeLogs(
   supabase: Client,
   ownerId: string,
   rangeStart: Date,
-  rangeEnd: Date
+  rangeEnd: Date,
 ): Promise<TimeLog[]> {
   const { data, error } = await supabase
     .from('time_logs')
@@ -23,13 +23,9 @@ export async function getTimeLogs(
 
 export async function createTimeLog(
   supabase: Client,
-  input: Omit<TablesInsert<'time_logs'>, 'id' | 'logged_at'>
+  input: Omit<TablesInsert<'time_logs'>, 'id' | 'logged_at'>,
 ): Promise<TimeLog> {
-  const { data, error } = await supabase
-    .from('time_logs')
-    .insert(input)
-    .select()
-    .single()
+  const { data, error } = await supabase.from('time_logs').insert(input).select().single()
 
   if (error) throw error
   return data
@@ -38,7 +34,7 @@ export async function createTimeLog(
 export async function updateTimeLog(
   supabase: Client,
   id: string,
-  update: TablesUpdate<'time_logs'>
+  update: TablesUpdate<'time_logs'>,
 ): Promise<TimeLog> {
   const { data, error } = await supabase
     .from('time_logs')

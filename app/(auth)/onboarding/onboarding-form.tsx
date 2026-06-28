@@ -13,10 +13,7 @@ interface Props {
 }
 
 export function OnboardingForm({ defaultName }: Props) {
-  const [state, action, pending] = useActionState<OnboardingState, FormData>(
-    onboardingAction,
-    null
-  )
+  const [state, action, pending] = useActionState<OnboardingState, FormData>(onboardingAction, null)
 
   return (
     <form action={action} className="flex flex-col gap-4">

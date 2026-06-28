@@ -45,7 +45,10 @@ export function buildRRule(r: RecurrenceValue): string {
   if (r.until) {
     // Convert 'YYYY-MM-DD' to RRULE UNTIL format
     const d = new Date(r.until + 'T23:59:59Z')
-    const until = d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+    const until = d
+      .toISOString()
+      .replace(/[-:]/g, '')
+      .replace(/\.\d{3}/, '')
     parts.push(`UNTIL=${until}`)
   }
   return parts.join(';')
@@ -105,7 +108,9 @@ export function RecurrenceBuilder({ value, onChange }: Props) {
           </Select>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label htmlFor="rrule-interval" className="text-xs">Every</Label>
+          <Label htmlFor="rrule-interval" className="text-xs">
+            Every
+          </Label>
           <div className="flex items-center gap-1.5">
             <Input
               id="rrule-interval"

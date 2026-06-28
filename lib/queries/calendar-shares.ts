@@ -11,10 +11,7 @@ import type {
 type Client = SupabaseClient<Database>
 
 /** Shares I own (I am the calendar owner who sent the invite). */
-export async function listMyShares(
-  supabase: Client,
-  ownerId: string
-): Promise<CalendarShare[]> {
+export async function listMyShares(supabase: Client, ownerId: string): Promise<CalendarShare[]> {
   const { data, error } = await supabase
     .from('calendar_shares')
     .select('*')
@@ -32,7 +29,7 @@ export interface IncomingInvite extends CalendarShare {
 /** Invitations addressed to me as collaborator (pending + accepted + declined). */
 export async function listIncomingInvites(
   supabase: Client,
-  collaboratorId: string
+  collaboratorId: string,
 ): Promise<IncomingInvite[]> {
   const { data, error } = await supabase
     .from('calendar_shares')
@@ -52,7 +49,7 @@ export interface AcceptedCalendar {
 
 export async function listAcceptedCalendars(
   supabase: Client,
-  collaboratorId: string
+  collaboratorId: string,
 ): Promise<AcceptedCalendar[]> {
   const { data, error } = await supabase
     .from('calendar_shares')
@@ -64,14 +61,15 @@ export async function listAcceptedCalendars(
   if (error) throw error
   return (data ?? []).map((row) => ({
     share: row as unknown as CalendarShare,
-    ownerProfile: (row as unknown as { owner_profile: Pick<Profile, 'id' | 'full_name' | 'email'> }).owner_profile,
+    ownerProfile: (row as unknown as { owner_profile: Pick<Profile, 'id' | 'full_name' | 'email'> })
+      .owner_profile,
   }))
 }
 
 /** Invite someone to my calendar. */
 export async function createShare(
   supabase: Client,
-  input: Pick<TablesInsert<'calendar_shares'>, 'owner_id' | 'invitee_email' | 'permission'>
+  input: Pick<TablesInsert<'calendar_shares'>, 'owner_id' | 'invitee_email' | 'permission'>,
 ): Promise<CalendarShare> {
   const { data, error } = await supabase
     .from('calendar_shares')
@@ -87,7 +85,7 @@ export async function createShare(
 export async function updateSharePermission(
   supabase: Client,
   shareId: string,
-  permission: SharePermission
+  permission: SharePermission,
 ): Promise<CalendarShare> {
   const { data, error } = await supabase
     .from('calendar_shares')
@@ -110,7 +108,7 @@ export async function revokeShare(supabase: Client, shareId: string): Promise<vo
 export async function acceptInvite(
   supabase: Client,
   shareId: string,
-  collaboratorId: string
+  collaboratorId: string,
 ): Promise<CalendarShare> {
   const { data, error } = await supabase
     .from('calendar_shares')
@@ -128,10 +126,7 @@ export async function acceptInvite(
 }
 
 /** Invitee declines an invitation. */
-export async function declineInvite(
-  supabase: Client,
-  shareId: string
-): Promise<CalendarShare> {
+export async function declineInvite(supabase: Client, shareId: string): Promise<CalendarShare> {
   const { data, error } = await supabase
     .from('calendar_shares')
     .update({ status: 'declined' satisfies ShareStatus, updated_at: new Date().toISOString() })

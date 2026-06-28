@@ -65,7 +65,10 @@ export function LogModal({
   const [pending, setPending] = useState(false)
 
   async function handleSave() {
-    if (!actualStart) { toast.error('Start time is required'); return }
+    if (!actualStart) {
+      toast.error('Start time is required')
+      return
+    }
     setPending(true)
     try {
       const start = new Date(actualStart)
@@ -106,8 +109,7 @@ export function LogModal({
         </DialogHeader>
         {isPlanned && (
           <div className="rounded-md bg-muted px-3 py-2 text-xs text-muted-foreground">
-            Planned: <strong>{occurrence.title}</strong> on{' '}
-            {occurrence.start.toLocaleString()}
+            Planned: <strong>{occurrence.title}</strong> on {occurrence.start.toLocaleString()}
           </div>
         )}
         <div className="flex flex-col gap-4 py-2">
@@ -124,22 +126,32 @@ export function LogModal({
             <div className="flex flex-col gap-1.5">
               <Label>Type</Label>
               <Select value={eventType} onValueChange={(v) => v && setEventType(v as EventType)}>
-                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {(Object.entries(EVENT_TYPE_LABELS) as [EventType, string][]).map(([val, label]) => (
-                    <SelectItem key={val} value={val}>{label}</SelectItem>
-                  ))}
+                  {(Object.entries(EVENT_TYPE_LABELS) as [EventType, string][]).map(
+                    ([val, label]) => (
+                      <SelectItem key={val} value={val}>
+                        {label}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>Category</Label>
               <Select value={categoryId} onValueChange={(v) => setCategoryId(v ?? '__none__')}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">None</SelectItem>
                   {categories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -148,16 +160,27 @@ export function LogModal({
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="log-start">Actual start</Label>
-              <Input id="log-start" type="datetime-local" value={actualStart} onChange={(e) => setActualStart(e.target.value)} />
+              <Input
+                id="log-start"
+                type="datetime-local"
+                value={actualStart}
+                onChange={(e) => setActualStart(e.target.value)}
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="log-end">Actual end</Label>
-              <Input id="log-end" type="datetime-local" value={actualEnd} onChange={(e) => setActualEnd(e.target.value)} />
+              <Input
+                id="log-end"
+                type="datetime-local"
+                value={actualEnd}
+                onChange={(e) => setActualEnd(e.target.value)}
+              />
             </div>
           </div>
           {actualStart && actualEnd && new Date(actualEnd) > new Date(actualStart) && (
             <p className="text-xs text-muted-foreground">
-              Duration: <strong>{minutesFromRange(new Date(actualStart), new Date(actualEnd))} min</strong>
+              Duration:{' '}
+              <strong>{minutesFromRange(new Date(actualStart), new Date(actualEnd))} min</strong>
             </p>
           )}
           <div className="flex flex-col gap-1.5">

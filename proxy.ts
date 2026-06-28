@@ -2,7 +2,15 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/proxy'
 
 // Routes requiring an authenticated session
-const PROTECTED_PREFIXES = ['/calendar', '/compare', '/stats', '/sharing', '/invitations', '/plan', '/settings']
+const PROTECTED_PREFIXES = [
+  '/calendar',
+  '/compare',
+  '/stats',
+  '/sharing',
+  '/invitations',
+  '/plan',
+  '/settings',
+]
 // Routes that authenticated users should be redirected away from
 const AUTH_PREFIXES = ['/login', '/signup', '/onboarding']
 
@@ -12,7 +20,6 @@ export async function proxy(request: NextRequest) {
 
   const isProtected = PROTECTED_PREFIXES.some((p) => path.startsWith(p))
   const isAuthPage = AUTH_PREFIXES.some((p) => path.startsWith(p))
-  const isRoot = path === '/'
 
   /**
    * Copy session cookies from supabaseResponse onto a redirect response so the
@@ -26,15 +33,15 @@ export async function proxy(request: NextRequest) {
     return redirectResponse
   }
 
-  // Unauthenticated: gate protected routes and root
-  if (!user && (isProtected || isRoot)) {
+  // Unauthenticated: gate protected routes
+  if (!user && isProtected) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirectTo', encodeURIComponent(path))
     return redirectWithCookies(loginUrl)
   }
 
-  // Authenticated: send away from auth pages and root → calendar
-  if (user && (isAuthPage || isRoot)) {
+  // Authenticated: send away from auth pages → calendar
+  if (user && isAuthPage) {
     return redirectWithCookies(new URL('/calendar', request.url))
   }
 

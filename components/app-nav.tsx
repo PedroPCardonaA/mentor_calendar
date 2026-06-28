@@ -61,7 +61,7 @@ export function AppNav({ profile, calendars, activeOwnerId, pendingInviteCount }
                   'flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors relative',
                   pathname.startsWith(href)
                     ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted',
                 )}
               >
                 <Icon className="h-4 w-4" />

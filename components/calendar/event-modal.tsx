@@ -51,7 +51,15 @@ function localInputToISO(s: string): string {
   return new Date(s).toISOString()
 }
 
-export function EventModal({ open, onOpenChange, mode, categories, ownerId, canEdit, onSuccess }: Props) {
+export function EventModal({
+  open,
+  onOpenChange,
+  mode,
+  categories,
+  ownerId,
+  canEdit,
+  onSuccess,
+}: Props) {
   const supabase = createClient()
 
   const existingEvent = mode.type !== 'create' ? mode.occurrence.event : null
@@ -63,15 +71,11 @@ export function EventModal({ open, onOpenChange, mode, categories, ownerId, canE
       : dateToLocalInput(existingOcc!.start)
 
   const initEnd =
-    mode.type === 'create'
-      ? ''
-      : existingOcc!.end
-      ? dateToLocalInput(existingOcc!.end)
-      : ''
+    mode.type === 'create' ? '' : existingOcc!.end ? dateToLocalInput(existingOcc!.end) : ''
 
   const [title, setTitle] = useState(existingOcc?.title ?? '')
   const [eventType, setEventType] = useState<EventType>(
-    (existingEvent?.event_type as EventType) ?? 'study'
+    (existingEvent?.event_type as EventType) ?? 'study',
   )
   const [categoryId, setCategoryId] = useState<string>(existingEvent?.category_id ?? '__none__')
   const [description, setDescription] = useState(existingEvent?.description ?? '')
@@ -79,7 +83,7 @@ export function EventModal({ open, onOpenChange, mode, categories, ownerId, canE
   const [endAt, setEndAt] = useState(initEnd)
   const [isRecurring, setIsRecurring] = useState(existingEvent?.is_recurring ?? false)
   const [recurrence, setRecurrence] = useState<RecurrenceValue>(
-    existingEvent?.rrule ? parseRRule(existingEvent.rrule) : DEFAULT_RECURRENCE
+    existingEvent?.rrule ? parseRRule(existingEvent.rrule) : DEFAULT_RECURRENCE,
   )
   const [pending, setPending] = useState(false)
 
@@ -88,8 +92,14 @@ export function EventModal({ open, onOpenChange, mode, categories, ownerId, canE
 
   async function handleSave() {
     if (readOnly) return
-    if (!title.trim()) { toast.error('Title is required'); return }
-    if (!startAt) { toast.error('Start time is required'); return }
+    if (!title.trim()) {
+      toast.error('Title is required')
+      return
+    }
+    if (!startAt) {
+      toast.error('Start time is required')
+      return
+    }
     setPending(true)
 
     try {
@@ -99,19 +109,17 @@ export function EventModal({ open, onOpenChange, mode, categories, ownerId, canE
       const rruleStr = isRecurring ? buildRRule(recurrence) : null
 
       if (isEditOccurrence && existingOcc) {
-        const { error } = await supabase
-          .from('event_exceptions')
-          .upsert(
-            {
-              event_id: existingOcc.event.id,
-              occurrence_start: existingOcc.occurrenceStart.toISOString(),
-              title: title !== existingOcc.event.title ? title : null,
-              start_at: start !== existingOcc.event.start_at ? start : null,
-              end_at: end,
-              is_cancelled: false,
-            },
-            { onConflict: 'event_id,occurrence_start' }
-          )
+        const { error } = await supabase.from('event_exceptions').upsert(
+          {
+            event_id: existingOcc.event.id,
+            occurrence_start: existingOcc.occurrenceStart.toISOString(),
+            title: title !== existingOcc.event.title ? title : null,
+            start_at: start !== existingOcc.event.start_at ? start : null,
+            end_at: end,
+            is_cancelled: false,
+          },
+          { onConflict: 'event_id,occurrence_start' },
+        )
         if (error) throw error
         toast.success('Occurrence updated')
       } else if (mode.type === 'edit-event' && existingEvent) {
@@ -126,14 +134,18 @@ export function EventModal({ open, onOpenChange, mode, categories, ownerId, canE
             end_at: end,
             is_recurring: isRecurring,
             rrule: rruleStr,
-            recurrence_until: recurrence.until ? new Date(recurrence.until + 'T23:59:59Z').toISOString() : null,
+            recurrence_until: recurrence.until
+              ? new Date(recurrence.until + 'T23:59:59Z').toISOString()
+              : null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existingEvent.id)
         if (error) throw error
         toast.success('Event updated')
       } else {
-        const { data: { user } } = await supabase.auth.getUser()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
         const { error } = await supabase.from('events').insert({
           owner_id: ownerId,
           created_by: user!.id,
@@ -145,7 +157,9 @@ export function EventModal({ open, onOpenChange, mode, categories, ownerId, canE
           end_at: end,
           is_recurring: isRecurring,
           rrule: rruleStr,
-          recurrence_until: recurrence.until ? new Date(recurrence.until + 'T23:59:59Z').toISOString() : null,
+          recurrence_until: recurrence.until
+            ? new Date(recurrence.until + 'T23:59:59Z').toISOString()
+            : null,
         })
         if (error) throw error
         toast.success('Event created')
@@ -164,16 +178,14 @@ export function EventModal({ open, onOpenChange, mode, categories, ownerId, canE
     if (readOnly || !existingOcc) return
     setPending(true)
     try {
-      const { error } = await supabase
-        .from('event_exceptions')
-        .upsert(
-          {
-            event_id: existingOcc.event.id,
-            occurrence_start: existingOcc.occurrenceStart.toISOString(),
-            is_cancelled: true,
-          },
-          { onConflict: 'event_id,occurrence_start' }
-        )
+      const { error } = await supabase.from('event_exceptions').upsert(
+        {
+          event_id: existingOcc.event.id,
+          occurrence_start: existingOcc.occurrenceStart.toISOString(),
+          is_cancelled: true,
+        },
+        { onConflict: 'event_id,occurrence_start' },
+      )
       if (error) throw error
       toast.success('Occurrence cancelled')
       onSuccess()
@@ -205,8 +217,8 @@ export function EventModal({ open, onOpenChange, mode, categories, ownerId, canE
     mode.type === 'create'
       ? 'New event'
       : isEditOccurrence
-      ? 'View / edit occurrence'
-      : 'Edit event'
+        ? 'View / edit occurrence'
+        : 'Edit event'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -224,7 +236,8 @@ export function EventModal({ open, onOpenChange, mode, categories, ownerId, canE
         <div className="flex flex-col gap-4 py-2">
           {existingEvent?.is_recurring && mode.type === 'edit-occurrence' && !readOnly && (
             <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
-              Editing only <strong>this occurrence</strong>. Changes won&apos;t affect other repeats.
+              Editing only <strong>this occurrence</strong>. Changes won&apos;t affect other
+              repeats.
             </div>
           )}
 
@@ -244,27 +257,41 @@ export function EventModal({ open, onOpenChange, mode, categories, ownerId, canE
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <Label>Type</Label>
-                  <Select value={eventType} onValueChange={(v) => v && setEventType(v as EventType)} disabled={readOnly}>
+                  <Select
+                    value={eventType}
+                    onValueChange={(v) => v && setEventType(v as EventType)}
+                    disabled={readOnly}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {(Object.entries(EVENT_TYPE_LABELS) as [EventType, string][]).map(([val, label]) => (
-                        <SelectItem key={val} value={val}>{label}</SelectItem>
-                      ))}
+                      {(Object.entries(EVENT_TYPE_LABELS) as [EventType, string][]).map(
+                        ([val, label]) => (
+                          <SelectItem key={val} value={val}>
+                            {label}
+                          </SelectItem>
+                        ),
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label>Category</Label>
-                  <Select value={categoryId} onValueChange={(v) => setCategoryId(v ?? '__none__')} disabled={readOnly}>
+                  <Select
+                    value={categoryId}
+                    onValueChange={(v) => setCategoryId(v ?? '__none__')}
+                    disabled={readOnly}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="None" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">None</SelectItem>
                       {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -289,11 +316,23 @@ export function EventModal({ open, onOpenChange, mode, categories, ownerId, canE
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="ev-start">Start</Label>
-              <Input id="ev-start" type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} disabled={readOnly} />
+              <Input
+                id="ev-start"
+                type="datetime-local"
+                value={startAt}
+                onChange={(e) => setStartAt(e.target.value)}
+                disabled={readOnly}
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="ev-end">End</Label>
-              <Input id="ev-end" type="datetime-local" value={endAt} onChange={(e) => setEndAt(e.target.value)} disabled={readOnly} />
+              <Input
+                id="ev-end"
+                type="datetime-local"
+                value={endAt}
+                onChange={(e) => setEndAt(e.target.value)}
+                disabled={readOnly}
+              />
             </div>
           </div>
 
@@ -308,9 +347,7 @@ export function EventModal({ open, onOpenChange, mode, categories, ownerId, canE
                 />
                 Repeat this event
               </label>
-              {isRecurring && (
-                <RecurrenceBuilder value={recurrence} onChange={setRecurrence} />
-              )}
+              {isRecurring && <RecurrenceBuilder value={recurrence} onChange={setRecurrence} />}
             </div>
           )}
         </div>

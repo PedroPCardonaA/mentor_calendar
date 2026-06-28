@@ -54,7 +54,7 @@ export function computeStats(
   categories: Category[],
   rangeStart: Date,
   rangeEnd: Date,
-  bucket: 'week' | 'month' = 'week'
+  bucket: 'week' | 'month' = 'week',
 ): StatsResult {
   const catMap = new Map(categories.map((c) => [c.id, c]))
   const occs = expandOccurrences(events, exceptions, rangeStart, rangeEnd)
@@ -86,22 +86,24 @@ export function computeStats(
 
   // Merge keys
   const catKeys = new Set([...plannedByCat.keys(), ...actualByCat.keys()])
-  const byCategory: HoursByCategory[] = [...catKeys].map((catId) => {
-    const cat = catId ? catMap.get(catId) ?? null : null
-    const info = cat ?? UNCATEGORIZED
-    return {
-      categoryId: catId,
-      categoryName: info.name,
-      color: info.color ?? '#6b7280',
-      plannedHours: Math.round((plannedByCat.get(catId) ?? 0) / 60 * 100) / 100,
-      actualHours: Math.round((actualByCat.get(catId) ?? 0) / 60 * 100) / 100,
-    }
-  }).sort((a, b) => b.plannedHours - a.plannedHours)
+  const byCategory: HoursByCategory[] = [...catKeys]
+    .map((catId) => {
+      const cat = catId ? (catMap.get(catId) ?? null) : null
+      const info = cat ?? UNCATEGORIZED
+      return {
+        categoryId: catId,
+        categoryName: info.name,
+        color: info.color ?? '#6b7280',
+        plannedHours: Math.round(((plannedByCat.get(catId) ?? 0) / 60) * 100) / 100,
+        actualHours: Math.round(((actualByCat.get(catId) ?? 0) / 60) * 100) / 100,
+      }
+    })
+    .sort((a, b) => b.plannedHours - a.plannedHours)
 
   const byType: HoursByType[] = EVENT_TYPES.map((et) => ({
     eventType: et,
-    plannedHours: Math.round((plannedByType.get(et) ?? 0) / 60 * 100) / 100,
-    actualHours: Math.round((actualByType.get(et) ?? 0) / 60 * 100) / 100,
+    plannedHours: Math.round(((plannedByType.get(et) ?? 0) / 60) * 100) / 100,
+    actualHours: Math.round(((actualByType.get(et) ?? 0) / 60) * 100) / 100,
   })).filter((r) => r.plannedHours > 0 || r.actualHours > 0)
 
   // Over-time bucketing
@@ -126,7 +128,7 @@ function buildOverTime(
   logs: TimeLog[],
   rangeStart: Date,
   rangeEnd: Date,
-  bucket: 'week' | 'month'
+  bucket: 'week' | 'month',
 ): HoursOverTime[] {
   const buckets = new Map<string, { planned: number; actual: number }>()
 
@@ -153,7 +155,8 @@ function buildOverTime(
 
   // Generate ordered bucket labels
   const labels: string[] = []
-  let cursor = bucket === 'week' ? startOfWeek(rangeStart, { weekStartsOn: 1 }) : startOfMonth(rangeStart)
+  let cursor =
+    bucket === 'week' ? startOfWeek(rangeStart, { weekStartsOn: 1 }) : startOfMonth(rangeStart)
   while (cursor <= rangeEnd) {
     labels.push(bucketKey(cursor))
     cursor = bucket === 'week' ? addWeeks(cursor, 1) : addMonths(cursor, 1)
@@ -163,8 +166,8 @@ function buildOverTime(
     const b = buckets.get(label) ?? { planned: 0, actual: 0 }
     return {
       label,
-      plannedHours: Math.round(b.planned / 60 * 100) / 100,
-      actualHours: Math.round(b.actual / 60 * 100) / 100,
+      plannedHours: Math.round((b.planned / 60) * 100) / 100,
+      actualHours: Math.round((b.actual / 60) * 100) / 100,
     }
   })
 }

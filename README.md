@@ -58,15 +58,15 @@ npx supabase gen types typescript --project-id etsaihssgoyexbzprrdo > lib/databa
 
 ## Features
 
-| Route | Description |
-|---|---|
-| `/calendar` | FullCalendar (month/week/day/list), event CRUD, recurrence, log actuals |
-| `/compare` | Planned vs. actual for a date range |
-| `/stats` | recharts: hours by category/type, over time, adherence % |
-| `/sharing` | Invite collaborators to **your** calendar (viewer or editor) |
-| `/invitations` | Accept/decline calendars shared with you |
-| `/plan/generate` | AI-proposed weekly plan (edge function), accept/edit/discard |
-| `/settings/categories` | Create/edit/delete categories with kind + color |
+| Route                  | Description                                                             |
+| ---------------------- | ----------------------------------------------------------------------- |
+| `/calendar`            | FullCalendar (month/week/day/list), event CRUD, recurrence, log actuals |
+| `/compare`             | Planned vs. actual for a date range                                     |
+| `/stats`               | recharts: hours by category/type, over time, adherence %                |
+| `/sharing`             | Invite collaborators to **your** calendar (viewer or editor)            |
+| `/invitations`         | Accept/decline calendars shared with you                                |
+| `/plan/generate`       | AI-proposed weekly plan (edge function), accept/edit/discard            |
+| `/settings/categories` | Create/edit/delete categories with kind + color                         |
 
 **Calendar switcher** (header) — browse "My calendar" or any accepted shared calendar. Viewer access: read-only (mutating controls hidden + RLS-enforced). Editor access: full CRUD.
 
@@ -80,10 +80,10 @@ The DB trigger auto-creates a `profiles` row on signup.
 
 Go to **Authentication → Users → Add user** and create:
 
-| Email | User metadata JSON |
-|---|---|
+| Email               | User metadata JSON       |
+| ------------------- | ------------------------ |
 | `alice@example.com` | `{"full_name": "Alice"}` |
-| `bob@example.com` | `{"full_name": "Bob"}` |
+| `bob@example.com`   | `{"full_name": "Bob"}`   |
 
 Set any password for both. The trigger creates `profiles` rows automatically.
 
@@ -173,22 +173,74 @@ END $$;
 ```
 
 After running:
+
 - Sign in as `alice@example.com` → see calendar events, run `/compare` for 2026-06-01 → 2026-06-30, check `/stats`.
 - Sign in as `bob@example.com` → `/invitations` shows Alice's share (already accepted); calendar switcher lists Alice's calendar; as editor Bob can add events.
 - To test viewer flow: change the share `permission` to `'viewer'` in the SQL editor and reload — mutating controls disappear and RLS rejects writes.
 
 ---
 
+## CI/CD & Deployment
+
+### GitHub Actions secrets
+
+Go to **Settings → Secrets and variables → Actions → New repository secret** and add:
+
+| Name                            | Value                                            |
+| ------------------------------- | ------------------------------------------------ |
+| `NEXT_PUBLIC_SUPABASE_URL`      | `https://etsaihssgoyexbzprrdo.supabase.co`       |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `sb_publishable_fB82cITZOE4OhzvFTne6pw_pT3KOMD6` |
+
+These are public/anon keys — safe to store in CI secrets.
+
+### Vercel production branch
+
+In **Vercel → Project → Settings → Git**, set **Production Branch = `production`**.
+
+- Vercel deploys `production` → production URL.
+- All other branches/PRs → preview deployments (no extra config needed).
+- The `promote.yml` workflow advances `production` to `main` automatically after CI passes.
+
+### Branch protection (optional but recommended)
+
+In **GitHub → Settings → Branches → Branch protection rules**, add a rule for `main`:
+
+- ✅ Require status checks to pass before merging → select **CI / verify**
+
+### Supabase Auth redirect URLs
+
+**Authentication → URL Configuration** — add all three:
+
+```
+http://localhost:3000
+https://your-app.vercel.app
+https://<project>-*.vercel.app/**
+```
+
+The wildcard pattern covers preview deployments from PRs and branch pushes.
+
+### Workflow summary
+
+| Workflow      | Trigger                        | What it does                                |
+| ------------- | ------------------------------ | ------------------------------------------- |
+| `ci.yml`      | push to `main`, any PR         | install (bun), format:check, lint, build    |
+| `promote.yml` | CI passes on `main`, or manual | fast-forwards `production` branch to `main` |
+
+> **Note on `lint` script:** uses `eslint` directly (not `next lint`) because `next lint` was removed in Next 16.
+> <!-- TODO(pedro): confirm once official Next 16 docs stabilise. -->
+
+---
+
 ## Notable Next.js 16 breaking changes
 
-| Old (≤15) | New (v16) |
-|---|---|
-| `middleware.ts` | `proxy.ts` at root; export `proxy()` |
-| `cookies()` sync | `await cookies()` |
-| `params` is plain object | `params` is `Promise<{}>` — must `await` |
-| Middleware on Edge runtime | Proxy defaults to Node.js runtime |
-| `error.js` `reset` prop | `unstable_retry` prop |
-| shadcn with `@radix-ui` | shadcn 2.x uses `@base-ui/react` — no `asChild`, use `render` prop |
+| Old (≤15)                  | New (v16)                                                          |
+| -------------------------- | ------------------------------------------------------------------ |
+| `middleware.ts`            | `proxy.ts` at root; export `proxy()`                               |
+| `cookies()` sync           | `await cookies()`                                                  |
+| `params` is plain object   | `params` is `Promise<{}>` — must `await`                           |
+| Middleware on Edge runtime | Proxy defaults to Node.js runtime                                  |
+| `error.js` `reset` prop    | `unstable_retry` prop                                              |
+| shadcn with `@radix-ui`    | shadcn 2.x uses `@base-ui/react` — no `asChild`, use `render` prop |
 
 ---
 

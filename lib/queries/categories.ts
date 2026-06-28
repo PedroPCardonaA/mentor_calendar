@@ -3,10 +3,7 @@ import type { Database, Category, TablesInsert, TablesUpdate } from '../database
 
 type Client = SupabaseClient<Database>
 
-export async function getCategories(
-  supabase: Client,
-  ownerId: string
-): Promise<Category[]> {
+export async function getCategories(supabase: Client, ownerId: string): Promise<Category[]> {
   const { data, error } = await supabase
     .from('categories')
     .select('*')
@@ -19,13 +16,9 @@ export async function getCategories(
 
 export async function createCategory(
   supabase: Client,
-  input: Omit<TablesInsert<'categories'>, 'id' | 'created_at' | 'updated_at'>
+  input: Omit<TablesInsert<'categories'>, 'id' | 'created_at' | 'updated_at'>,
 ): Promise<Category> {
-  const { data, error } = await supabase
-    .from('categories')
-    .insert(input)
-    .select()
-    .single()
+  const { data, error } = await supabase.from('categories').insert(input).select().single()
 
   if (error) throw error
   return data
@@ -34,7 +27,7 @@ export async function createCategory(
 export async function updateCategory(
   supabase: Client,
   id: string,
-  update: TablesUpdate<'categories'>
+  update: TablesUpdate<'categories'>,
 ): Promise<Category> {
   const { data, error } = await supabase
     .from('categories')

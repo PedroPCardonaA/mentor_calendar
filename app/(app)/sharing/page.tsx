@@ -6,7 +6,9 @@ import type { CalendarShare } from '@/lib/database.types'
 
 export default async function SharingPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   const { me } = await getActiveCalendar(supabase)
