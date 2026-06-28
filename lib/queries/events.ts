@@ -10,13 +10,13 @@ import type {
 type Client = SupabaseClient<Database>
 
 /**
- * Fetch events for a student that could have occurrences in [rangeStart, rangeEnd].
+ * Fetch events for a calendar owner that could have occurrences in [rangeStart, rangeEnd].
  * - Non-recurring: start_at in range
  * - Recurring: start_at <= rangeEnd AND (recurrence_until IS NULL OR recurrence_until >= rangeStart)
  */
 export async function getEvents(
   supabase: Client,
-  studentId: string,
+  ownerId: string,
   rangeStart: Date,
   rangeEnd: Date
 ): Promise<Event[]> {
@@ -26,7 +26,7 @@ export async function getEvents(
   const { data, error } = await supabase
     .from('events')
     .select('*')
-    .eq('student_id', studentId)
+    .eq('owner_id', ownerId)
     .or(
       `and(is_recurring.eq.false,start_at.gte.${start},start_at.lte.${end}),` +
         `and(is_recurring.eq.true,start_at.lte.${end},or(recurrence_until.is.null,recurrence_until.gte.${start}))`

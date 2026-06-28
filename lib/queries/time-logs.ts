@@ -5,15 +5,14 @@ type Client = SupabaseClient<Database>
 
 export async function getTimeLogs(
   supabase: Client,
-  studentId: string,
+  ownerId: string,
   rangeStart: Date,
   rangeEnd: Date
 ): Promise<TimeLog[]> {
-  // Filter by logged_at falling in range, or by actual_start when available
   const { data, error } = await supabase
     .from('time_logs')
     .select('*')
-    .eq('student_id', studentId)
+    .eq('owner_id', ownerId)
     .gte('logged_at', rangeStart.toISOString())
     .lte('logged_at', rangeEnd.toISOString())
     .order('logged_at')

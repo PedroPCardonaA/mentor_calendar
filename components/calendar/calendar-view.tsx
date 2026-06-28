@@ -18,9 +18,10 @@ const CalendarClient = dynamic(
 
 interface Props {
   categories: Category[]
-  studentId: string
+  ownerId: string
+  canEdit: boolean
 }
 
-export function CalendarView({ categories, studentId }: Props) {
-  return <CalendarClient categories={categories} studentId={studentId} />
+export function CalendarView({ categories, ownerId, canEdit }: Props) {
+  return <CalendarClient categories={categories} ownerId={ownerId} canEdit={canEdit} />
 }

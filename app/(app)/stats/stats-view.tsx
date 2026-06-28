@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { computeStats } from '@/lib/stats'
-import type { Category, Event, EventException, TimeLog, EventType, Profile } from '@/lib/database.types'
+import type { Category, Event, EventException, TimeLog, EventType } from '@/lib/database.types'
 import { EVENT_TYPE_LABELS } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,21 +26,17 @@ import {
   YAxis,
   Tooltip,
   Legend,
-  LineChart,
-  Line,
   CartesianGrid,
 } from 'recharts'
 import { format, subWeeks, startOfWeek, endOfWeek } from 'date-fns'
 import type { StatsResult } from '@/lib/stats'
 
 interface Props {
-  userId: string
-  isMentor: boolean
-  students: Profile[]
+  ownerId: string
   initialCategories: Category[]
 }
 
-export function StatsView({ userId, isMentor, students, initialCategories }: Props) {
+export function StatsView({ ownerId, initialCategories }: Props) {
   const supabase = createClient()
 
   const now = new Date()
@@ -50,29 +46,19 @@ export function StatsView({ userId, isMentor, students, initialCategories }: Pro
   const [startDate, setStartDate] = useState(defStart)
   const [endDate, setEndDate] = useState(defEnd)
   const [bucket, setBucket] = useState<'week' | 'month'>('week')
-  const [selectedStudent, setSelectedStudent] = useState<string>('__self__')
-  const [categories, setCategories] = useState<Category[]>(initialCategories)
+  const [categories] = useState<Category[]>(initialCategories)
   const [stats, setStats] = useState<StatsResult | null>(null)
   const [pending, startTransition] = useTransition()
 
   function load() {
     startTransition(async () => {
-      const targetId = isMentor && selectedStudent !== '__self__' ? selectedStudent : userId
       const rangeStart = new Date(startDate + 'T00:00:00')
       const rangeEnd = new Date(endDate + 'T23:59:59')
-
-      // Fetch student's categories if viewing a different user
-      let cats = categories
-      if (targetId !== userId) {
-        const { data } = await supabase.from('categories').select('*').eq('owner_id', targetId)
-        cats = data ?? []
-        setCategories(cats)
-      }
 
       const { data: eventsData } = await supabase
         .from('events')
         .select('*')
-        .eq('student_id', targetId)
+        .eq('owner_id', ownerId)
         .or(
           `and(is_recurring.eq.false,start_at.gte.${rangeStart.toISOString()},start_at.lte.${rangeEnd.toISOString()}),` +
             `and(is_recurring.eq.true,start_at.lte.${rangeEnd.toISOString()},or(recurrence_until.is.null,recurrence_until.gte.${rangeStart.toISOString()}))`
@@ -90,12 +76,12 @@ export function StatsView({ userId, isMentor, students, initialCategories }: Pro
       const { data: logsData } = await supabase
         .from('time_logs')
         .select('*')
-        .eq('student_id', targetId)
+        .eq('owner_id', ownerId)
         .gte('logged_at', rangeStart.toISOString())
         .lte('logged_at', rangeEnd.toISOString())
 
       const logs: TimeLog[] = logsData ?? []
-      setStats(computeStats(events, exceptions, logs, cats, rangeStart, rangeEnd, bucket))
+      setStats(computeStats(events, exceptions, logs, categories, rangeStart, rangeEnd, bucket))
     })
   }
 
@@ -103,22 +89,6 @@ export function StatsView({ userId, isMentor, students, initialCategories }: Pro
     <div className="flex flex-col gap-6">
       {/* Filters */}
       <div className="flex items-end gap-3 flex-wrap">
-        {isMentor && students.length > 0 && (
-          <div className="flex flex-col gap-1.5">
-            <Label>Student</Label>
-            <Select value={selectedStudent} onValueChange={(v) => v && setSelectedStudent(v)}>
-              <SelectTrigger className="w-44">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__self__">My own stats</SelectItem>
-                {students.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>{s.full_name ?? s.email ?? s.id}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="stats-start">From</Label>
           <Input id="stats-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-40" />
@@ -130,9 +100,7 @@ export function StatsView({ userId, isMentor, students, initialCategories }: Pro
         <div className="flex flex-col gap-1.5">
           <Label>Bucket</Label>
           <Select value={bucket} onValueChange={(v) => v && setBucket(v as 'week' | 'month')}>
-            <SelectTrigger className="w-28">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="week">Weekly</SelectItem>
               <SelectItem value="month">Monthly</SelectItem>
@@ -152,7 +120,6 @@ export function StatsView({ userId, isMentor, students, initialCategories }: Pro
 
       {stats && (
         <>
-          {/* KPI */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <KpiCard label="Total adherence" value={`${stats.totalAdherence}%`} />
             <KpiCard label="Planned hours" value={stats.byCategory.reduce((s, r) => s + r.plannedHours, 0).toFixed(1) + 'h'} />
@@ -210,7 +177,7 @@ export function StatsView({ userId, isMentor, students, initialCategories }: Pro
                 <CardHeader><CardTitle className="text-base">Hours by event type</CardTitle></CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={260}>
-                    <BarChart data={stats.byType.map((r) => ({ ...r, label: EVENT_TYPE_LABELS[r.eventType] }))}>
+                    <BarChart data={stats.byType.map((r) => ({ ...r, label: EVENT_TYPE_LABELS[r.eventType as EventType] }))}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} unit="h" />

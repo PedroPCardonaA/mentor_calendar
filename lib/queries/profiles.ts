@@ -35,39 +35,3 @@ export async function updateProfile(
   if (error) throw error
   return data
 }
-
-/** Get all profiles that are linked to `userId` via mentorships (both directions). */
-export async function getLinkedProfiles(
-  supabase: Client,
-  userId: string
-): Promise<Profile[]> {
-  // Linked as mentor → get students
-  const { data: asStudents, error: e1 } = await supabase
-    .from('mentorships')
-    .select('student_id')
-    .eq('mentor_id', userId)
-
-  // Linked as student → get mentors
-  const { data: asMentors, error: e2 } = await supabase
-    .from('mentorships')
-    .select('mentor_id')
-    .eq('student_id', userId)
-
-  if (e1) throw e1
-  if (e2) throw e2
-
-  const ids = [
-    ...(asStudents ?? []).map((r) => r.student_id),
-    ...(asMentors ?? []).map((r) => r.mentor_id),
-  ]
-
-  if (ids.length === 0) return []
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .in('id', ids)
-
-  if (error) throw error
-  return data ?? []
-}

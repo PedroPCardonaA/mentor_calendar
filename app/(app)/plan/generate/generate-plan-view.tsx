@@ -17,27 +17,26 @@ import { toast } from 'sonner'
 import { format, startOfWeek, nextMonday } from 'date-fns'
 
 interface DraftItem {
-  id: string // local id
+  id: string
   proposed: ProposedEvent
   accepted: boolean
   edited: boolean
-  // Editable fields (override proposed)
   title: string
   start_at: string
   end_at: string
 }
 
 interface Props {
-  studentId: string
+  ownerId: string
+  me: string
   categories: Category[]
+  canEdit: boolean
 }
 
 function getNextMonday(): string {
   const now = new Date()
-  const next = nextMonday(startOfWeek(now, { weekStartsOn: 1 }))
-  // If today is Monday, use today's week
-  const candidateThisWeek = startOfWeek(now, { weekStartsOn: 1 })
-  const target = candidateThisWeek >= now ? candidateThisWeek : next
+  const thisWeekStart = startOfWeek(now, { weekStartsOn: 1 })
+  const target = thisWeekStart >= now ? thisWeekStart : nextMonday(thisWeekStart)
   return format(target, "yyyy-MM-dd'T'00:00:00'Z'")
 }
 
@@ -47,7 +46,7 @@ function localDT(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-export function GeneratePlanView({ studentId, categories }: Props) {
+export function GeneratePlanView({ ownerId, me, categories, canEdit }: Props) {
   const supabase = createClient()
   const router = useRouter()
   const catMap = new Map(categories.map((c) => [c.id, c]))
@@ -59,11 +58,12 @@ export function GeneratePlanView({ studentId, categories }: Props) {
   const [savePending, startSave] = useTransition()
 
   function generate() {
+    if (!canEdit) return
     startGen(async () => {
       const resp = await fetch('/api/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ student_id: studentId, week_start: weekStart }),
+        body: JSON.stringify({ owner_id: ownerId, week_start: weekStart }),
       })
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({ error: 'Unknown error' }))
@@ -91,9 +91,7 @@ export function GeneratePlanView({ studentId, categories }: Props) {
 
   function saveEdit(id: string, fields: { title: string; start_at: string; end_at: string }) {
     setDraft((prev) =>
-      prev?.map((item) =>
-        item.id === id ? { ...item, ...fields, edited: true } : item
-      ) ?? null
+      prev?.map((item) => item.id === id ? { ...item, ...fields, edited: true } : item) ?? null
     )
     setEditingId(null)
   }
@@ -107,31 +105,24 @@ export function GeneratePlanView({ studentId, categories }: Props) {
   }
 
   function handleSave() {
-    if (!draft) return
+    if (!draft || !canEdit) return
     startSave(async () => {
       const toInsert = draft.filter((item) => item.accepted)
-      if (toInsert.length === 0) {
-        toast.error('No events accepted.')
-        return
-      }
-
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { toast.error('Not authenticated'); return }
+      if (toInsert.length === 0) { toast.error('No events accepted.'); return }
 
       let inserted = 0
       let skipped = 0
 
       for (const item of toInsert) {
-        // Skip fixture events that already have an event_id (they already exist in DB)
+        // Skip fixture events that already exist in DB
         if (item.proposed.source === 'fixture' && item.proposed.event_id) {
           skipped++
           continue
         }
-        // TODO(pedro): verify edge fn response matches ProposedEvent shape; adjust if fields differ
 
         const { error } = await supabase.from('events').insert({
-          student_id: studentId,
-          created_by: user.id,
+          owner_id: ownerId,
+          created_by: me,
           title: item.title,
           event_type: item.proposed.event_type,
           category_id: item.proposed.category_id,
@@ -139,14 +130,13 @@ export function GeneratePlanView({ studentId, categories }: Props) {
           end_at: item.end_at,
           is_recurring: false,
         })
-        if (error) {
-          toast.error(`Failed to insert "${item.title}": ${error.message}`)
-          return
-        }
+        if (error) { toast.error(`Failed to insert "${item.title}": ${error.message}`); return }
         inserted++
       }
 
-      toast.success(`Inserted ${inserted} event${inserted !== 1 ? 's' : ''}${skipped > 0 ? `, skipped ${skipped} existing` : ''}.`)
+      toast.success(
+        `Inserted ${inserted} event${inserted !== 1 ? 's' : ''}${skipped > 0 ? `, skipped ${skipped} existing` : ''}.`
+      )
       setDraft(null)
       router.push('/calendar')
     })
@@ -156,7 +146,6 @@ export function GeneratePlanView({ studentId, categories }: Props) {
 
   return (
     <div className="flex flex-col gap-6 max-w-2xl">
-      {/* Week picker + generate */}
       <Card>
         <CardHeader><CardTitle className="text-base">Select week</CardTitle></CardHeader>
         <CardContent className="flex items-end gap-3">
@@ -168,22 +157,20 @@ export function GeneratePlanView({ studentId, categories }: Props) {
               value={weekStart.replace('Z', '')}
               onChange={(e) => setWeekStart(e.target.value + ':00Z')}
               className="w-56"
+              disabled={!canEdit}
             />
           </div>
-          <Button onClick={generate} disabled={genPending}>
+          <Button onClick={generate} disabled={genPending || !canEdit}>
             <Sparkles className="h-4 w-4 mr-1.5" />
             {genPending ? 'Generating…' : 'Generate plan'}
           </Button>
         </CardContent>
       </Card>
 
-      {/* Draft list */}
       {draft && (
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              {acceptedCount} of {draft.length} accepted
-            </p>
+            <p className="text-sm text-muted-foreground">{acceptedCount} of {draft.length} accepted</p>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={acceptAll}>Accept all</Button>
               <Button variant="outline" size="sm" onClick={rejectAll}>Reject all</Button>
@@ -197,6 +184,7 @@ export function GeneratePlanView({ studentId, categories }: Props) {
                 item={item}
                 catMap={catMap}
                 isEditing={editingId === item.id}
+                canEdit={canEdit}
                 onToggleAccept={() => toggleAccept(item.id)}
                 onEditStart={() => setEditingId(item.id)}
                 onEditSave={(fields) => saveEdit(item.id, fields)}
@@ -209,7 +197,7 @@ export function GeneratePlanView({ studentId, categories }: Props) {
 
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setDraft(null)}>Discard all</Button>
-            <Button onClick={handleSave} disabled={savePending || acceptedCount === 0}>
+            <Button onClick={handleSave} disabled={savePending || acceptedCount === 0 || !canEdit}>
               {savePending ? 'Saving…' : `Accept ${acceptedCount} event${acceptedCount !== 1 ? 's' : ''}`}
             </Button>
           </div>
@@ -223,13 +211,14 @@ interface DraftCardProps {
   item: DraftItem
   catMap: Map<string, Category>
   isEditing: boolean
+  canEdit: boolean
   onToggleAccept: () => void
   onEditStart: () => void
   onEditSave: (fields: { title: string; start_at: string; end_at: string }) => void
   onEditCancel: () => void
 }
 
-function DraftCard({ item, catMap, isEditing, onToggleAccept, onEditStart, onEditSave, onEditCancel }: DraftCardProps) {
+function DraftCard({ item, catMap, isEditing, canEdit, onToggleAccept, onEditStart, onEditSave, onEditCancel }: DraftCardProps) {
   const cat = item.proposed.category_id ? catMap.get(item.proposed.category_id) : null
   const color = cat?.color ?? EVENT_TYPE_COLORS[item.proposed.event_type as EventType] ?? '#6b7280'
   const isFixtureExisting = item.proposed.source === 'fixture' && !!item.proposed.event_id
@@ -274,6 +263,7 @@ function DraftCard({ item, catMap, isEditing, onToggleAccept, onEditStart, onEdi
           onClick={onToggleAccept}
           className="flex-shrink-0 mt-0.5"
           title={item.accepted ? 'Click to reject' : 'Click to accept'}
+          disabled={!canEdit}
         >
           {item.accepted ? (
             <CheckCircle2 className="h-5 w-5 text-green-500" />
@@ -304,13 +294,15 @@ function DraftCard({ item, catMap, isEditing, onToggleAccept, onEditStart, onEdi
             </Badge>
           </div>
         </div>
-        <button
-          onClick={onEditStart}
-          className="flex-shrink-0 p-1 rounded hover:bg-muted transition-colors"
-          title="Edit"
-        >
-          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-        </button>
+        {canEdit && (
+          <button
+            onClick={onEditStart}
+            className="flex-shrink-0 p-1 rounded hover:bg-muted transition-colors"
+            title="Edit"
+          >
+            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+          </button>
+        )}
       </div>
     </li>
   )

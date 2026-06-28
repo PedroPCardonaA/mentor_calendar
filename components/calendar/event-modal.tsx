@@ -37,12 +37,12 @@ interface Props {
   onOpenChange: (open: boolean) => void
   mode: ModalMode
   categories: Category[]
-  studentId: string
+  ownerId: string
+  canEdit: boolean
   onSuccess: () => void
 }
 
 function dateToLocalInput(d: Date): string {
-  // Format as YYYY-MM-DDTHH:MM (local time for datetime-local input)
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
@@ -51,10 +51,9 @@ function localInputToISO(s: string): string {
   return new Date(s).toISOString()
 }
 
-export function EventModal({ open, onOpenChange, mode, categories, studentId, onSuccess }: Props) {
+export function EventModal({ open, onOpenChange, mode, categories, ownerId, canEdit, onSuccess }: Props) {
   const supabase = createClient()
 
-  // Derive initial values from mode
   const existingEvent = mode.type !== 'create' ? mode.occurrence.event : null
   const existingOcc = mode.type !== 'create' ? mode.occurrence : null
 
@@ -85,8 +84,10 @@ export function EventModal({ open, onOpenChange, mode, categories, studentId, on
   const [pending, setPending] = useState(false)
 
   const isEditOccurrence = mode.type === 'edit-occurrence'
+  const readOnly = !canEdit
 
   async function handleSave() {
+    if (readOnly) return
     if (!title.trim()) { toast.error('Title is required'); return }
     if (!startAt) { toast.error('Start time is required'); return }
     setPending(true)
@@ -98,7 +99,6 @@ export function EventModal({ open, onOpenChange, mode, categories, studentId, on
       const rruleStr = isRecurring ? buildRRule(recurrence) : null
 
       if (isEditOccurrence && existingOcc) {
-        // Override just this occurrence via event_exception
         const { error } = await supabase
           .from('event_exceptions')
           .upsert(
@@ -115,7 +115,6 @@ export function EventModal({ open, onOpenChange, mode, categories, studentId, on
         if (error) throw error
         toast.success('Occurrence updated')
       } else if (mode.type === 'edit-event' && existingEvent) {
-        // Update the master event
         const { error } = await supabase
           .from('events')
           .update({
@@ -134,10 +133,10 @@ export function EventModal({ open, onOpenChange, mode, categories, studentId, on
         if (error) throw error
         toast.success('Event updated')
       } else {
-        // Create new event
+        const { data: { user } } = await supabase.auth.getUser()
         const { error } = await supabase.from('events').insert({
-          student_id: studentId,
-          created_by: (await supabase.auth.getUser()).data.user!.id,
+          owner_id: ownerId,
+          created_by: user!.id,
           title: title.trim(),
           event_type: eventType,
           category_id: catId,
@@ -162,7 +161,7 @@ export function EventModal({ open, onOpenChange, mode, categories, studentId, on
   }
 
   async function handleDeleteOccurrence() {
-    if (!existingOcc) return
+    if (readOnly || !existingOcc) return
     setPending(true)
     try {
       const { error } = await supabase
@@ -187,7 +186,7 @@ export function EventModal({ open, onOpenChange, mode, categories, studentId, on
   }
 
   async function handleDeleteEvent() {
-    if (!existingEvent) return
+    if (readOnly || !existingEvent) return
     setPending(true)
     try {
       const { error } = await supabase.from('events').delete().eq('id', existingEvent.id)
@@ -206,19 +205,24 @@ export function EventModal({ open, onOpenChange, mode, categories, studentId, on
     mode.type === 'create'
       ? 'New event'
       : isEditOccurrence
-      ? 'Edit this occurrence'
+      ? 'View / edit occurrence'
       : 'Edit event'
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{modalTitle}</DialogTitle>
+          <DialogTitle>{readOnly ? 'View event' : modalTitle}</DialogTitle>
         </DialogHeader>
 
+        {readOnly && (
+          <div className="rounded-md bg-muted border px-3 py-2 text-xs text-muted-foreground">
+            You have <strong>viewer</strong> access to this calendar — editing is disabled.
+          </div>
+        )}
+
         <div className="flex flex-col gap-4 py-2">
-          {/* Occurrence-edit choice banner */}
-          {existingEvent?.is_recurring && mode.type === 'edit-occurrence' && (
+          {existingEvent?.is_recurring && mode.type === 'edit-occurrence' && !readOnly && (
             <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
               Editing only <strong>this occurrence</strong>. Changes won&apos;t affect other repeats.
             </div>
@@ -231,7 +235,7 @@ export function EventModal({ open, onOpenChange, mode, categories, studentId, on
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Event title"
-              disabled={isEditOccurrence}
+              disabled={isEditOccurrence || readOnly}
             />
           </div>
 
@@ -240,7 +244,7 @@ export function EventModal({ open, onOpenChange, mode, categories, studentId, on
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
                   <Label>Type</Label>
-                  <Select value={eventType} onValueChange={(v) => v && setEventType(v as EventType)}>
+                  <Select value={eventType} onValueChange={(v) => v && setEventType(v as EventType)} disabled={readOnly}>
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
@@ -253,16 +257,14 @@ export function EventModal({ open, onOpenChange, mode, categories, studentId, on
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label>Category</Label>
-                  <Select value={categoryId} onValueChange={(v) => setCategoryId(v ?? '__none__')}>
+                  <Select value={categoryId} onValueChange={(v) => setCategoryId(v ?? '__none__')} disabled={readOnly}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="None" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">None</SelectItem>
                       {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </SelectItem>
+                        <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -277,7 +279,8 @@ export function EventModal({ open, onOpenChange, mode, categories, studentId, on
                   onChange={(e) => setDescription(e.target.value)}
                   rows={2}
                   placeholder="Optional notes"
-                  className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-none"
+                  disabled={readOnly}
+                  className="w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 resize-none disabled:opacity-50"
                 />
               </div>
             </>
@@ -286,25 +289,15 @@ export function EventModal({ open, onOpenChange, mode, categories, studentId, on
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="ev-start">Start</Label>
-              <Input
-                id="ev-start"
-                type="datetime-local"
-                value={startAt}
-                onChange={(e) => setStartAt(e.target.value)}
-              />
+              <Input id="ev-start" type="datetime-local" value={startAt} onChange={(e) => setStartAt(e.target.value)} disabled={readOnly} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="ev-end">End</Label>
-              <Input
-                id="ev-end"
-                type="datetime-local"
-                value={endAt}
-                onChange={(e) => setEndAt(e.target.value)}
-              />
+              <Input id="ev-end" type="datetime-local" value={endAt} onChange={(e) => setEndAt(e.target.value)} disabled={readOnly} />
             </div>
           </div>
 
-          {!isEditOccurrence && (
+          {!isEditOccurrence && !readOnly && (
             <div className="flex flex-col gap-2">
               <label className="flex items-center gap-2 cursor-pointer text-sm">
                 <input
@@ -323,8 +316,7 @@ export function EventModal({ open, onOpenChange, mode, categories, studentId, on
         </div>
 
         <DialogFooter>
-          {/* Delete actions */}
-          {existingOcc && (
+          {!readOnly && existingOcc && (
             <div className="flex gap-2 mr-auto">
               {existingEvent?.is_recurring && (
                 <Button
@@ -351,11 +343,13 @@ export function EventModal({ open, onOpenChange, mode, categories, studentId, on
             </div>
           )}
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>
-            Cancel
+            {readOnly ? 'Close' : 'Cancel'}
           </Button>
-          <Button onClick={handleSave} disabled={pending}>
-            {pending ? 'Saving…' : 'Save'}
-          </Button>
+          {!readOnly && (
+            <Button onClick={handleSave} disabled={pending}>
+              {pending ? 'Saving…' : 'Save'}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

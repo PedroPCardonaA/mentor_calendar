@@ -47,19 +47,6 @@ export function SignupForm() {
           placeholder="At least 8 characters"
         />
       </div>
-      <div className="flex flex-col gap-1.5">
-        <Label>I am a…</Label>
-        <div className="flex gap-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="radio" name="role" value="student" defaultChecked className="accent-primary" />
-            <span className="text-sm">Student</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input type="radio" name="role" value="mentor" className="accent-primary" />
-            <span className="text-sm">Mentor</span>
-          </label>
-        </div>
-      </div>
       {state?.error && (
         <p className="text-sm text-destructive" role="alert">
           {state.error}

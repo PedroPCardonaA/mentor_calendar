@@ -5,16 +5,14 @@ import { onboardingAction } from './actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
 
 type OnboardingState = { error?: string } | null
 
 interface Props {
   defaultName: string
-  role: 'student' | 'mentor'
 }
 
-export function OnboardingForm({ defaultName, role }: Props) {
+export function OnboardingForm({ defaultName }: Props) {
   const [state, action, pending] = useActionState<OnboardingState, FormData>(
     onboardingAction,
     null
@@ -22,11 +20,6 @@ export function OnboardingForm({ defaultName, role }: Props) {
 
   return (
     <form action={action} className="flex flex-col gap-4">
-      <div className="flex items-center justify-center">
-        <Badge variant={role === 'mentor' ? 'default' : 'secondary'} className="capitalize text-sm">
-          {role}
-        </Badge>
-      </div>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="full_name">Display name</Label>
         <Input

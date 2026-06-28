@@ -10,8 +10,6 @@ export async function signupAction(
   const full_name = (formData.get('full_name') as string).trim()
   const email = formData.get('email') as string
   const password = formData.get('password') as string
-  const role = (formData.get('role') as string) || 'student'
-
   if (!full_name) return { error: 'Full name is required.' }
   if (password.length < 8) return { error: 'Password must be at least 8 characters.' }
 
@@ -21,8 +19,8 @@ export async function signupAction(
     email,
     password,
     options: {
-      // The DB trigger reads role and full_name from raw_user_meta_data
-      data: { role, full_name },
+      // DB trigger reads full_name from raw_user_meta_data to create profiles row
+      data: { full_name },
     },
   })
 

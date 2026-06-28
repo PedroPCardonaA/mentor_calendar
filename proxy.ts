@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/proxy'
 
 // Routes requiring an authenticated session
-const PROTECTED_PREFIXES = ['/calendar', '/compare', '/stats', '/mentor', '/plan', '/settings']
+const PROTECTED_PREFIXES = ['/calendar', '/compare', '/stats', '/sharing', '/invitations', '/plan', '/settings']
 // Routes that authenticated users should be redirected away from
 const AUTH_PREFIXES = ['/login', '/signup', '/onboarding']
 
@@ -33,11 +33,9 @@ export async function proxy(request: NextRequest) {
     return redirectWithCookies(loginUrl)
   }
 
-  // Authenticated: send away from auth pages and root to role landing
+  // Authenticated: send away from auth pages and root → calendar
   if (user && (isAuthPage || isRoot)) {
-    const role = user.user_metadata?.role as string | undefined
-    const landing = role === 'mentor' ? '/mentor' : '/calendar'
-    return redirectWithCookies(new URL(landing, request.url))
+    return redirectWithCookies(new URL('/calendar', request.url))
   }
 
   return supabaseResponse

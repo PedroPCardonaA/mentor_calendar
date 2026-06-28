@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_shares: {
+        Row: {
+          collaborator_id: string | null
+          created_at: string
+          id: string
+          invitee_email: string
+          owner_id: string
+          permission: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          collaborator_id?: string | null
+          created_at?: string
+          id?: string
+          invitee_email: string
+          owner_id: string
+          permission?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          collaborator_id?: string | null
+          created_at?: string
+          id?: string
+          invitee_email?: string
+          owner_id?: string
+          permission?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_shares_collaborator_id_fkey"
+            columns: ["collaborator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_shares_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           color: string | null
@@ -103,10 +151,10 @@ export type Database = {
           event_type: string
           id: string
           is_recurring: boolean
+          owner_id: string
           recurrence_until: string | null
           rrule: string | null
           start_at: string
-          student_id: string
           title: string
           updated_at: string
         }
@@ -119,10 +167,10 @@ export type Database = {
           event_type?: string
           id?: string
           is_recurring?: boolean
+          owner_id: string
           recurrence_until?: string | null
           rrule?: string | null
           start_at: string
-          student_id: string
           title: string
           updated_at?: string
         }
@@ -135,10 +183,10 @@ export type Database = {
           event_type?: string
           id?: string
           is_recurring?: boolean
+          owner_id?: string
           recurrence_until?: string | null
           rrule?: string | null
           start_at?: string
-          student_id?: string
           title?: string
           updated_at?: string
         }
@@ -159,43 +207,7 @@ export type Database = {
           },
           {
             foreignKeyName: "events_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      mentorships: {
-        Row: {
-          created_at: string
-          id: string
-          mentor_id: string
-          student_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          mentor_id: string
-          student_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          mentor_id?: string
-          student_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "mentorships_mentor_id_fkey"
-            columns: ["mentor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "mentorships_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -208,7 +220,6 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
-          role: string
           updated_at: string
         }
         Insert: {
@@ -216,7 +227,6 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
-          role?: string
           updated_at?: string
         }
         Update: {
@@ -224,7 +234,6 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
-          role?: string
           updated_at?: string
         }
         Relationships: []
@@ -241,7 +250,7 @@ export type Database = {
           logged_at: string
           notes: string | null
           occurrence_start: string | null
-          student_id: string
+          owner_id: string
           title: string | null
         }
         Insert: {
@@ -255,7 +264,7 @@ export type Database = {
           logged_at?: string
           notes?: string | null
           occurrence_start?: string | null
-          student_id: string
+          owner_id: string
           title?: string | null
         }
         Update: {
@@ -269,7 +278,7 @@ export type Database = {
           logged_at?: string
           notes?: string | null
           occurrence_start?: string | null
-          student_id?: string
+          owner_id?: string
           title?: string | null
         }
         Relationships: [
@@ -289,7 +298,7 @@ export type Database = {
           },
           {
             foreignKeyName: "time_logs_student_id_fkey"
-            columns: ["student_id"]
+            columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -301,9 +310,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_calendar: { Args: { cal_owner: string }; Returns: boolean }
       can_access_event: { Args: { eid: string }; Returns: boolean }
-      is_linked: { Args: { other: string }; Returns: boolean }
-      is_mentor_of: { Args: { target_student: string }; Returns: boolean }
+      can_edit_calendar: { Args: { cal_owner: string }; Returns: boolean }
+      can_edit_event: { Args: { eid: string }; Returns: boolean }
+      shares_calendar_with: { Args: { other: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
@@ -437,15 +448,18 @@ export const Constants = {
   },
 } as const
 
+// ---------------------------------------------------------------------------
 // Convenience row types
+// ---------------------------------------------------------------------------
 export type Profile = Tables<'profiles'>
+export type CalendarShare = Tables<'calendar_shares'>
 export type Category = Tables<'categories'>
 export type Event = Tables<'events'>
 export type EventException = Tables<'event_exceptions'>
 export type TimeLog = Tables<'time_logs'>
-export type Mentorship = Tables<'mentorships'>
 
-// Domain enums (string unions derived from schema constraints)
-export type UserRole = 'mentor' | 'student'
+// Domain literal unions (narrowed from DB string columns)
 export type EventType = 'deadline' | 'lecture' | 'lab' | 'study' | 'other'
 export type CategoryKind = 'course' | 'project' | 'other'
+export type SharePermission = 'viewer' | 'editor'
+export type ShareStatus = 'pending' | 'accepted' | 'declined'

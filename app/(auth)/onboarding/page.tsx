@@ -11,7 +11,7 @@ export default async function OnboardingPage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('full_name, role')
+    .select('full_name')
     .eq('id', user.id)
     .single()
 
@@ -24,7 +24,6 @@ export default async function OnboardingPage() {
       <CardContent>
         <OnboardingForm
           defaultName={profile?.full_name ?? user.user_metadata?.full_name ?? ''}
-          role={(profile?.role ?? user.user_metadata?.role ?? 'student') as 'student' | 'mentor'}
         />
       </CardContent>
     </Card>

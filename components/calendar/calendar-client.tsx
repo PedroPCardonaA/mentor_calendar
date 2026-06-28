@@ -18,7 +18,8 @@ import { ClipboardList } from 'lucide-react'
 
 interface Props {
   categories: Category[]
-  studentId: string
+  ownerId: string
+  canEdit: boolean
 }
 
 interface CalEvent {
@@ -31,7 +32,7 @@ interface CalEvent {
   extendedProps: { occurrence: Occurrence }
 }
 
-export function CalendarClient({ categories, studentId }: Props) {
+export function CalendarClient({ categories, ownerId, canEdit }: Props) {
   const supabase = createClient()
   const catMap = new Map(categories.map((c) => [c.id, c]))
 
@@ -41,7 +42,6 @@ export function CalendarClient({ categories, studentId }: Props) {
   const [logModalOpen, setLogModalOpen] = useState(false)
   const [logOccurrence, setLogOccurrence] = useState<Occurrence | null>(null)
 
-  // Track current date range to re-fetch on changes
   const currentRangeRef = useRef<{ start: Date; end: Date } | null>(null)
 
   const fetchAndExpand = useCallback(
@@ -52,7 +52,7 @@ export function CalendarClient({ categories, studentId }: Props) {
       const { data: eventsData } = await supabase
         .from('events')
         .select('*')
-        .eq('student_id', studentId)
+        .eq('owner_id', ownerId)
         .or(
           `and(is_recurring.eq.false,start_at.gte.${start},start_at.lte.${end}),` +
             `and(is_recurring.eq.true,start_at.lte.${end},or(recurrence_until.is.null,recurrence_until.gte.${start}))`
@@ -90,7 +90,7 @@ export function CalendarClient({ categories, studentId }: Props) {
       setCalEvents(mapped)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [studentId, categories]
+    [ownerId, categories]
   )
 
   function handleDatesSet({ start, end }: DatesSetArg) {
@@ -105,6 +105,7 @@ export function CalendarClient({ categories, studentId }: Props) {
   }
 
   function handleDateSelect({ start }: DateSelectArg) {
+    if (!canEdit) return
     setModalMode({ type: 'create', defaultStart: start })
     setModalOpen(true)
   }
@@ -122,12 +123,14 @@ export function CalendarClient({ categories, studentId }: Props) {
 
   return (
     <>
-      <div className="mb-4 flex justify-end">
-        <Button variant="outline" size="sm" onClick={openUnplannedLog}>
-          <ClipboardList className="h-4 w-4 mr-1.5" />
-          Add unplanned log
-        </Button>
-      </div>
+      {canEdit && (
+        <div className="mb-4 flex justify-end">
+          <Button variant="outline" size="sm" onClick={openUnplannedLog}>
+            <ClipboardList className="h-4 w-4 mr-1.5" />
+            Add unplanned log
+          </Button>
+        </div>
+      )}
 
       <div className="fc-wrapper">
         <FullCalendar
@@ -138,8 +141,8 @@ export function CalendarClient({ categories, studentId }: Props) {
             center: 'title',
             right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
           }}
-          selectable
-          selectMirror
+          selectable={canEdit}
+          selectMirror={canEdit}
           dayMaxEvents
           events={calEvents}
           datesSet={handleDatesSet}
@@ -147,24 +150,25 @@ export function CalendarClient({ categories, studentId }: Props) {
           select={handleDateSelect}
           height="auto"
           eventTimeFormat={{ hour: '2-digit', minute: '2-digit', meridiem: false }}
-          /* Render a "Log" button inside event content */
           eventContent={(arg) => {
             const occ: Occurrence = arg.event.extendedProps.occurrence
             return (
               <div className="flex items-center gap-1 w-full overflow-hidden px-1">
                 <span className="flex-1 truncate text-xs font-medium">{arg.event.title}</span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setLogOccurrence(occ)
-                    setLogModalOpen(true)
-                  }}
-                  title="Log actual time"
-                  className="flex-shrink-0 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100 transition-opacity"
-                  style={{ fontSize: 10, lineHeight: 1 }}
-                >
-                  📋
-                </button>
+                {canEdit && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setLogOccurrence(occ)
+                      setLogModalOpen(true)
+                    }}
+                    title="Log actual time"
+                    className="flex-shrink-0 opacity-0 group-hover:opacity-100 hover:opacity-100 focus:opacity-100 transition-opacity"
+                    style={{ fontSize: 10, lineHeight: 1 }}
+                  >
+                    📋
+                  </button>
+                )}
               </div>
             )
           }}
@@ -177,19 +181,22 @@ export function CalendarClient({ categories, studentId }: Props) {
           onOpenChange={setModalOpen}
           mode={modalMode}
           categories={categories}
-          studentId={studentId}
+          ownerId={ownerId}
+          canEdit={canEdit}
           onSuccess={handleSuccess}
         />
       )}
 
-      <LogModal
-        open={logModalOpen}
-        onOpenChange={setLogModalOpen}
-        occurrence={logOccurrence}
-        categories={categories}
-        studentId={studentId}
-        onSuccess={handleSuccess}
-      />
+      {canEdit && (
+        <LogModal
+          open={logModalOpen}
+          onOpenChange={setLogModalOpen}
+          occurrence={logOccurrence}
+          categories={categories}
+          ownerId={ownerId}
+          onSuccess={handleSuccess}
+        />
+      )}
     </>
   )
 }

@@ -16,7 +16,7 @@ import { format, startOfWeek, endOfWeek } from 'date-fns'
 
 interface Props {
   categories: Category[]
-  studentId: string
+  ownerId: string
 }
 
 interface CompareRow {
@@ -73,7 +73,7 @@ function buildRows(occs: Occurrence[], logs: TimeLog[]): CompareRow[] {
   })
 }
 
-export function CompareView({ categories, studentId }: Props) {
+export function CompareView({ categories, ownerId }: Props) {
   const supabase = createClient()
   const catMap = new Map(categories.map((c) => [c.id, c]))
 
@@ -92,7 +92,7 @@ export function CompareView({ categories, studentId }: Props) {
       const { data: eventsData } = await supabase
         .from('events')
         .select('*')
-        .eq('student_id', studentId)
+        .eq('owner_id', ownerId)
         .or(
           `and(is_recurring.eq.false,start_at.gte.${rangeStart.toISOString()},start_at.lte.${rangeEnd.toISOString()}),` +
             `and(is_recurring.eq.true,start_at.lte.${rangeEnd.toISOString()},or(recurrence_until.is.null,recurrence_until.gte.${rangeStart.toISOString()}))`
@@ -111,7 +111,7 @@ export function CompareView({ categories, studentId }: Props) {
       const { data: logsData } = await supabase
         .from('time_logs')
         .select('*')
-        .eq('student_id', studentId)
+        .eq('owner_id', ownerId)
         .gte('logged_at', rangeStart.toISOString())
         .lte('logged_at', rangeEnd.toISOString())
 

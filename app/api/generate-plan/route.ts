@@ -15,6 +15,7 @@ export interface ProposedEvent {
 }
 
 export interface GeneratePlanResponse {
+  owner_id: string
   week_start: string
   proposed: ProposedEvent[]
 }
@@ -30,10 +31,10 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json()
-  const { student_id, week_start } = body as { student_id: string; week_start: string }
+  const { owner_id, week_start } = body as { owner_id: string; week_start: string }
 
-  if (!student_id || !week_start) {
-    return NextResponse.json({ error: 'student_id and week_start required' }, { status: 400 })
+  if (!owner_id || !week_start) {
+    return NextResponse.json({ error: 'owner_id and week_start required' }, { status: 400 })
   }
 
   const resp = await fetch(EDGE_FUNCTION_URL, {
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
       Authorization: `Bearer ${session.access_token}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ student_id, week_start }),
+    body: JSON.stringify({ owner_id, week_start }),
   })
 
   if (!resp.ok) {

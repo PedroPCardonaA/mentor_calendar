@@ -1,28 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { getActiveCalendar } from '@/lib/active-calendar'
 import { GeneratePlanView } from './generate-plan-view'
 import type { Category } from '@/lib/database.types'
 
 export default async function GeneratePlanPage() {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  // Only students can generate a plan for themselves
-  if (profile?.role === 'mentor') redirect('/mentor')
+  const { ownerId, canEdit } = await getActiveCalendar(supabase)
 
   const { data: categoriesData } = await supabase
     .from('categories')
     .select('*')
-    .eq('owner_id', user.id)
+    .eq('owner_id', ownerId)
     .order('name')
 
   return (
@@ -33,9 +25,16 @@ export default async function GeneratePlanPage() {
           Let AI propose a study plan for the week. Review, edit, then accept.
         </p>
       </div>
+      {!canEdit && (
+        <div className="mb-4 rounded-md bg-muted border px-3 py-2 text-sm text-muted-foreground">
+          You have <strong>viewer</strong> access to this calendar — plan generation is disabled.
+        </div>
+      )}
       <GeneratePlanView
-        studentId={user.id}
+        ownerId={ownerId}
+        me={user.id}
         categories={(categoriesData ?? []) as Category[]}
+        canEdit={canEdit}
       />
     </div>
   )

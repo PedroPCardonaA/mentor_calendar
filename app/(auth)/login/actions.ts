@@ -15,6 +15,5 @@ export async function loginAction(
 
   if (error) return { error: error.message }
 
-  const role = data.user?.user_metadata?.role as string | undefined
-  redirect(role === 'mentor' ? '/mentor' : '/calendar')
+  redirect('/calendar')
 }

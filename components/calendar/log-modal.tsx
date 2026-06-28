@@ -36,7 +36,7 @@ export interface LogModalProps {
   /** Pre-fill from a planned occurrence. Null = unplanned log. */
   occurrence: Occurrence | null
   categories: Category[]
-  studentId: string
+  ownerId: string
   onSuccess: () => void
 }
 
@@ -45,7 +45,7 @@ export function LogModal({
   onOpenChange,
   occurrence,
   categories,
-  studentId,
+  ownerId,
   onSuccess,
 }: LogModalProps) {
   const supabase = createClient()
@@ -54,8 +54,7 @@ export function LogModal({
   const initType = (occurrence?.event.event_type as EventType) ?? 'study'
   const initCat = occurrence?.event.category_id ?? '__none__'
   const initStart = occurrence ? dateToLocalInput(occurrence.start) : dateToLocalInput(new Date())
-  const initEnd =
-    occurrence?.end ? dateToLocalInput(occurrence.end) : ''
+  const initEnd = occurrence?.end ? dateToLocalInput(occurrence.end) : ''
 
   const [title, setTitle] = useState(initTitle)
   const [eventType, setEventType] = useState<EventType>(initType)
@@ -73,8 +72,8 @@ export function LogModal({
       const end = actualEnd ? new Date(actualEnd) : null
       const minutes = end ? minutesFromRange(start, end) : 0
 
-      const payload = {
-        student_id: studentId,
+      const { error } = await supabase.from('time_logs').insert({
+        owner_id: ownerId,
         event_id: occurrence?.event.id ?? null,
         occurrence_start: occurrence?.occurrenceStart.toISOString() ?? null,
         category_id: categoryId === '__none__' ? null : categoryId,
@@ -84,9 +83,7 @@ export function LogModal({
         actual_start: start.toISOString(),
         actual_end: end?.toISOString() ?? null,
         actual_minutes: Math.max(0, minutes),
-      }
-
-      const { error } = await supabase.from('time_logs').insert(payload)
+      })
       if (error) throw error
 
       toast.success(occurrence ? 'Actual time logged' : 'Unplanned log saved')
@@ -126,31 +123,19 @@ export function LogModal({
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label>Type</Label>
-              <Select
-                value={eventType}
-                onValueChange={(v) => v && setEventType(v as EventType)}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
+              <Select value={eventType} onValueChange={(v) => v && setEventType(v as EventType)}>
+                <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {(Object.entries(EVENT_TYPE_LABELS) as [EventType, string][]).map(
-                    ([val, label]) => (
-                      <SelectItem key={val} value={val}>{label}</SelectItem>
-                    )
-                  )}
+                  {(Object.entries(EVENT_TYPE_LABELS) as [EventType, string][]).map(([val, label]) => (
+                    <SelectItem key={val} value={val}>{label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label>Category</Label>
-              <Select
-                value={categoryId}
-                onValueChange={(v) => setCategoryId(v ?? '__none__')}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
+              <Select value={categoryId} onValueChange={(v) => setCategoryId(v ?? '__none__')}>
+                <SelectTrigger className="w-full"><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__">None</SelectItem>
                   {categories.map((cat) => (
@@ -163,29 +148,16 @@ export function LogModal({
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="log-start">Actual start</Label>
-              <Input
-                id="log-start"
-                type="datetime-local"
-                value={actualStart}
-                onChange={(e) => setActualStart(e.target.value)}
-              />
+              <Input id="log-start" type="datetime-local" value={actualStart} onChange={(e) => setActualStart(e.target.value)} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="log-end">Actual end</Label>
-              <Input
-                id="log-end"
-                type="datetime-local"
-                value={actualEnd}
-                onChange={(e) => setActualEnd(e.target.value)}
-              />
+              <Input id="log-end" type="datetime-local" value={actualEnd} onChange={(e) => setActualEnd(e.target.value)} />
             </div>
           </div>
           {actualStart && actualEnd && new Date(actualEnd) > new Date(actualStart) && (
             <p className="text-xs text-muted-foreground">
-              Duration:{' '}
-              <strong>
-                {minutesFromRange(new Date(actualStart), new Date(actualEnd))} min
-              </strong>
+              Duration: <strong>{minutesFromRange(new Date(actualStart), new Date(actualEnd))} min</strong>
             </p>
           )}
           <div className="flex flex-col gap-1.5">
